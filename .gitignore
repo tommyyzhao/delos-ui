@@ -1,0 +1,10 @@
+.DS_Store
+.claude/
+.env
+.env.*
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+*.log
+/train/data/

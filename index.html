@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark">
+  <title>DELOS — Live Token Tree</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="console" aria-label="Delos live model console">
+  <header class="topbar">
+    <a class="logo" href="#code" aria-label="Delos home">DELOS</a>
+    <nav aria-label="System modules"><a class="tab active" href="#code" aria-current="page">CODE</a><a class="tab" href="#host">HOSTS</a><span class="tab">SOFTWARE</span><a class="tab" href="decide.html">MODS</a><span class="tab">INFO</span><span class="tab">DATA</span></nav>
+    <div class="system-status"><span class="status-dot"></span><span id="system-status">LOADING HOST</span><span class="status-divider">/</span> LOCAL INFERENCE <span class="status-divider">/</span> ADMIN</div>
+  </header>
+  <section class="overview" aria-label="Model diagnostics and processing architecture">
+    <section class="host" id="host" aria-label="Model diagnostics">
+      <div class="host-tools" aria-hidden="true"><button tabindex="-1">◈</button><button tabindex="-1">▤</button><button tabindex="-1">⋈</button><button tabindex="-1">▧</button><button tabindex="-1">ϟ</button><button tabindex="-1">＋</button><button tabindex="-1">∞</button><button tabindex="-1">−</button></div>
+      <div class="portrait">
+        <div class="portrait-disc"><div class="silhouette"><span class="hair"></span><span class="head"></span><span class="neck"></span><span class="shoulders"></span></div><span class="portrait-scan"></span></div>
+        <svg class="portrait-ring" viewBox="0 0 220 220" role="img" aria-label="Delos host"><defs><path id="host-label" d="M 110, 208 a 98,98 0 1,1 0,-196 a 98,98 0 1,1 0,196"/></defs><circle cx="110" cy="110" r="106"/><circle class="ring-inner" cx="110" cy="110" r="88"/><path class="ring-segment" d="M 191 42 A 106 106 0 0 1 190 179"/><text><textPath href="#host-label" startOffset="1%">HOST ID# HC1983012522</textPath></text><path class="portrait-pointer" d="M 110 17 L 85 0 H 135 Z"/></svg>
+      </div>
+      <div class="telemetry">
+        <div class="telemetry-top"><span class="tiny-tag" id="model-kind">LIVE</span><span>STATUS: <b id="phase">LOADING</b></span><span class="serial">TINY STORIES / LOCAL GPT</span></div>
+        <dl class="telemetry-data" id="model-config"></dl>
+        <div class="host-actions"><span>BYTE-LEVEL TOKENS</span><span>CAUSAL ATTENTION</span><span>LOCAL SESSION</span></div>
+        <div class="eeg"><div class="eeg-label">ENTROPY<span>BITS / STEP</span></div><svg id="entropy-chart" viewBox="0 0 250 34" preserveAspectRatio="none" role="img" aria-label="Generated token entropy history"><title>Entropy history — no generated tokens yet</title></svg><span class="eeg-label" id="entropy-hover">NO STEPS</span></div>
+        <div class="vitals"><div><span>HR<small>TOKENS GENERATED</small></span><strong id="tokens-count">0</strong></div><div><span>SpO₂<small>TOP-1 PROB %</small></span><strong id="top-prob">—</strong></div><div><span>RR<small>FORWARD MS</small></span><strong id="forward-ms">—</strong></div></div>
+      </div>
+    </section>
+    <section class="knowledge module" aria-labelledby="knowledge-title"><h2 id="knowledge-title">KNOWLEDGE BASE</h2><ul class="knowledge-list" id="layers"></ul><span class="module-corner" aria-hidden="true">⌄</span></section>
+    <div class="engine-links" aria-hidden="true"><span>〈· ·〉</span><span>〈· ·〉</span></div>
+    <div class="engines"><section class="module engine" id="forward-engine"><h2>INFERENCE ENGINE</h2><h3>FORWARD CHAINING</h3><div class="engine-direction"><span>·</span> ≫≫ <span>·</span></div></section><section class="module engine"><h2>INFERENCE ENGINE</h2><h3>BACKWARD / RE-BRANCH</h3><div class="engine-direction"><span>·</span> ≪≪ <span>·</span></div></section></div>
+    <div class="engine-links" aria-hidden="true"><span>〈· ·〉</span><span>〈· ·〉</span></div>
+    <section class="processes module" aria-labelledby="process-title"><h2 id="process-title">PROCESSES</h2><ul id="processes"><li data-phase="TOKENIZE">TOKENIZE</li><li data-phase="FORWARD">FORWARD</li><li data-phase="SOFTMAX">SOFTMAX</li><li data-phase="SAMPLE">SAMPLE</li><li data-phase="READY">DIALOGUE TREE</li><li data-phase="LOADING">LOAD HOST</li></ul><span class="module-corner" aria-hidden="true">⌄</span></section>
+  </section>
+  <section class="dialogue-heading" id="code" aria-labelledby="dialogue-title"><h1 id="dialogue-title">DIALOGUE TREE</h1><label class="prompt-label" for="prompt">¬</label><input id="prompt" value="Once upon a time" aria-label="Prompt" spellcheck="false"><span class="heading-meta">TINY STORIES / NEXT-TOKEN PREDICTION</span></section>
+  <div class="controls" aria-label="Generation controls"><button id="step" disabled>STEP →</button><button id="run" disabled>RUN</button><button id="back" disabled>← BACK</button><button id="reset" disabled>RESET</button><label>TOP-N <input id="top-n" type="number" min="3" max="20" value="10"></label><label>TEMP <input id="temperature" type="number" min="0" max="5" step="0.1" value="1"></label><label>MODE <select id="mode"><option value="sample">SAMPLE</option><option value="greedy">GREEDY</option></select></label><span class="control-help">SPACE / → STEP · ← BACK · ENTER APPLY PROMPT</span></div>
+  <div class="decoded" id="decoded" aria-label="Decoded token chain"></div>
+  <nav class="breadcrumb" aria-label="Current process"><span>KNOWLEDGE BASE</span><i aria-hidden="true">〈- • -〉</i><span>INFERENCE ENGINE</span><i aria-hidden="true">〈- • -〉</i><span>PROCESS</span><i aria-hidden="true">〈- • -〉</i><strong>DIALOGUE TREE</strong></nav>
+  <div class="live-workspace">
+    <section class="tree-viewport" id="tree-viewport" aria-label="Token chain, horizontally scrollable" tabindex="0"><div class="tree" id="tree"></div></section>
+    <aside class="inspector module" aria-labelledby="inspector-title"><h2 id="inspector-title">LOGIT INSPECTOR / NEXT</h2><div class="distribution-meta" id="distribution-meta">AWAITING HOST</div><p class="inspector-help">CLICK A NODE TO INSPECT · CLICK A CHIP TO RE-BRANCH</p><div class="table-scroll"><table><thead><tr><th>#</th><th>TOKEN / PROBABILITY</th><th>LOGIT</th><th>LOGIT / T</th><th>PROB</th><th>CUM.</th></tr></thead><tbody id="logits-table"></tbody></table></div><p class="inspector-help" id="inspector-note">Probabilities cover the full vocabulary. Only top-N shown.</p></aside>
+  </div>
+  <div class="app-message" id="app-message" role="status" aria-live="polite"></div>
+  <footer><span>DELOS INCORPORATED <i> / </i> HOST MANAGEMENT SYSTEM</span><span>LOCAL GPT <i> / </i> NO REMOTE INFERENCE</span></footer>
+  <div class="loading-overlay" id="loading-overlay" role="status" aria-live="polite"><h2 id="loading-title">LOADING HOST…</h2><progress id="loading-progress" aria-label="Model loading"></progress><p id="loading-detail">Loading tokenizer and model weights.</p></div>
+</main>
+<script>
+if (location.protocol === 'file:') {
+  document.getElementById('loading-title').textContent = 'HTTP SERVER REQUIRED';
+  document.getElementById('loading-detail').textContent = 'Serve with `python3 -m http.server` then open http://localhost:8000/. Browser modules cannot load via file://.';
+  document.getElementById('loading-progress').hidden = true;
+}
+</script>
+<script type="module" src="app.js"></script>
+</body>
+</html>

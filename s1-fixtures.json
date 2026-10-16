@@ -1,0 +1,1832 @@
+{
+  "model": "tinystories-15m-local",
+  "temperature": 1,
+  "provenance": "32 hand-written + first 40 validation cloze items from feasibility probe seed 20261011. Cloze gold = observed next word; alternatives may be plausible. Small illustrative subset, not an independent test set.",
+  "generated_by": "test/s1-fixtures.mjs imports s1.js; actual local model inference, not copied probe probabilities.",
+  "items": [
+    {
+      "id": "hand-0",
+      "category": "emotion",
+      "prefix": "Lily got a lovely present from her mother. She smiled and danced around the room. She was very",
+      "options": [
+        "angry",
+        "sad",
+        "happy",
+        "scared"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.00007201218668420865,
+          0.0003285785756638285,
+          0.9995882715428357,
+          0.000011137694816263771
+        ],
+        "codes": [
+          0.13916037051305685,
+          0.7841450560842878,
+          0.04102719568108281,
+          0.03566737772157259
+        ]
+      }
+    },
+    {
+      "id": "hand-1",
+      "category": "emotion",
+      "prefix": "Sara found her lost puppy. She hugged him and laughed with joy. She was very",
+      "options": [
+        "happy",
+        "angry",
+        "sad",
+        "scared"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.9787726500986641,
+          0.001426847316564528,
+          0.017988730725794867,
+          0.0018117718589764473
+        ],
+        "codes": [
+          0.11628462501623243,
+          0.7831265180604781,
+          0.04114383035956468,
+          0.05944502656372488
+        ]
+      }
+    },
+    {
+      "id": "hand-2",
+      "category": "emotion",
+      "prefix": "Lily lost her favorite doll. She sat alone and cried. She was very",
+      "options": [
+        "scared",
+        "sad",
+        "happy",
+        "angry"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.043027323454596596,
+          0.9248464823294752,
+          0.0072022097634562255,
+          0.02492398445247185
+        ],
+        "codes": [
+          0.21663078408333783,
+          0.6720100360506478,
+          0.051969713699608615,
+          0.05938946616640581
+        ]
+      }
+    },
+    {
+      "id": "hand-3",
+      "category": "emotion",
+      "prefix": "Sara waved goodbye to her best friend, who was moving far away. Tears ran down her face. She was very",
+      "options": [
+        "happy",
+        "angry",
+        "scared",
+        "sad"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.7738840766841489,
+          0.020571817023443382,
+          0.027936449774509126,
+          0.17760765651789862
+        ],
+        "codes": [
+          0.05885501422774295,
+          0.8485536819883766,
+          0.022113428863776638,
+          0.07047787492010371
+        ]
+      }
+    },
+    {
+      "id": "hand-4",
+      "category": "emotion",
+      "prefix": "Lily saw a big dog barking and running towards her. She hid behind her mother and shook. She was very",
+      "options": [
+        "happy",
+        "angry",
+        "sad",
+        "scared"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.0072098547860499265,
+          0.03030411332760377,
+          0.0350870865555674,
+          0.9273989453307789
+        ],
+        "codes": [
+          0.13132694485027335,
+          0.802089075260948,
+          0.040319956040462825,
+          0.026264023848315745
+        ]
+      }
+    },
+    {
+      "id": "hand-5",
+      "category": "emotion",
+      "prefix": "Sara heard a loud noise in the dark. She thought a monster was in her room and held her mother tightly. She was very",
+      "options": [
+        "sad",
+        "happy",
+        "scared",
+        "angry"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.003952525450327604,
+          0.020608194262678684,
+          0.9573926451912946,
+          0.01804663509569885
+        ],
+        "codes": [
+          0.30145098407729276,
+          0.5840643643734146,
+          0.06786691449298245,
+          0.04661773705631014
+        ]
+      }
+    },
+    {
+      "id": "hand-6",
+      "category": "emotion",
+      "prefix": "Lily saw a boy break her toy on purpose. She frowned and shouted at him. She was very",
+      "options": [
+        "angry",
+        "sad",
+        "happy",
+        "scared"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.297415008728554,
+          0.6323680182699403,
+          0.004250062992983217,
+          0.06596691000852269
+        ],
+        "codes": [
+          0.09703767216885813,
+          0.8071601840735977,
+          0.058946593002095926,
+          0.036855550755448205
+        ]
+      }
+    },
+    {
+      "id": "hand-7",
+      "category": "emotion",
+      "prefix": "Sara saw her brother take her cake without asking. She stamped her feet and yelled at him. She was very",
+      "options": [
+        "happy",
+        "sad",
+        "angry",
+        "scared"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.03217690766775956,
+          0.19745241210822448,
+          0.663183137521587,
+          0.10718754270242889
+        ],
+        "codes": [
+          0.16631596212970354,
+          0.7273051042850118,
+          0.04691658145698493,
+          0.05946235212829972
+        ]
+      }
+    },
+    {
+      "id": "hand-8",
+      "category": "name_recall",
+      "prefix": "There was a girl named Lily and a boy named Tom. Lily had a red ball. Tom had a blue kite. They played together in the park. The girl was named",
+      "options": [
+        "Sara",
+        "Tom",
+        "Lily",
+        "Lucy"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.044830564567404904,
+          0.0968411768317168,
+          0.829397586601103,
+          0.02893067199977551
+        ],
+        "codes": [
+          0.1004488880694512,
+          0.5648097010542316,
+          0.2389024153119415,
+          0.09583899556437578
+        ]
+      }
+    },
+    {
+      "id": "hand-9",
+      "category": "name_recall",
+      "prefix": "There was a girl named Lily and a boy named Tom. Lily had a red ball. Tom had a blue kite. They played together in the park. The boy was named",
+      "options": [
+        "Sara",
+        "Lily",
+        "Lucy",
+        "Tom"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.0008329054270766364,
+          0.003915615438827977,
+          0.00008701640363585141,
+          0.9951644627304596
+        ],
+        "codes": [
+          0.11279345388913078,
+          0.5272295458851604,
+          0.26630175834059217,
+          0.09367524188511663
+        ]
+      }
+    },
+    {
+      "id": "hand-10",
+      "category": "name_recall",
+      "prefix": "There was a girl named Sara and a boy named Ben. Sara had a small doll. Ben had a toy car. They played together in the park. The girl was named",
+      "options": [
+        "Lucy",
+        "Sara",
+        "Lily",
+        "Ben"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.05588930348855464,
+          0.20998843508860343,
+          0.6086694046746959,
+          0.12545285674814616
+        ],
+        "codes": [
+          0.1247758986649023,
+          0.6366438423200235,
+          0.1376565204824001,
+          0.1009237385326742
+        ]
+      }
+    },
+    {
+      "id": "hand-11",
+      "category": "name_recall",
+      "prefix": "There was a girl named Sara and a boy named Ben. Sara had a small doll. Ben had a toy car. They played together in the park. The boy was named",
+      "options": [
+        "Sara",
+        "Lily",
+        "Ben",
+        "Lucy"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.005808959394114092,
+          0.003624166200227624,
+          0.9902582790561392,
+          0.0003085953495192674
+        ],
+        "codes": [
+          0.11224752491340448,
+          0.5839759663048395,
+          0.20547417907972276,
+          0.09830232970203326
+        ]
+      }
+    },
+    {
+      "id": "hand-12",
+      "category": "name_recall",
+      "prefix": "There was a girl named Lucy and a boy named Max. Lucy had a yellow flower. Max had a green hat. They played together in the park. The girl was named",
+      "options": [
+        "Sara",
+        "Lily",
+        "Lucy",
+        "Max"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.03272975438109045,
+          0.4976939114534143,
+          0.4556580881591629,
+          0.013918246006332456
+        ],
+        "codes": [
+          0.11332325577320441,
+          0.6524100599648263,
+          0.1374290904562636,
+          0.09683759380570578
+        ]
+      }
+    },
+    {
+      "id": "hand-13",
+      "category": "name_recall",
+      "prefix": "There was a girl named Lucy and a boy named Max. Lucy had a yellow flower. Max had a green hat. They played together in the park. The boy was named",
+      "options": [
+        "Sara",
+        "Lily",
+        "Lucy",
+        "Max"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.007863721929244812,
+          0.023024159989763128,
+          0.043516858207941184,
+          0.9255952598730509
+        ],
+        "codes": [
+          0.11253720974017785,
+          0.6472334422736808,
+          0.1438320745625177,
+          0.0963972734236236
+        ]
+      }
+    },
+    {
+      "id": "hand-14",
+      "category": "name_recall",
+      "prefix": "There was a girl named Mia and a boy named Sam. Mia had a pretty shell. Sam had a little boat. They played together in the park. The girl was named",
+      "options": [
+        "Sam",
+        "Mia",
+        "Sara",
+        "Lily"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.13980432699492626,
+          0.5053367463016366,
+          0.01501871724877311,
+          0.33984020945466403
+        ],
+        "codes": [
+          0.10718392861767777,
+          0.6718959421541769,
+          0.12384688535924969,
+          0.0970732438688956
+        ]
+      }
+    },
+    {
+      "id": "hand-15",
+      "category": "name_recall",
+      "prefix": "There was a girl named Mia and a boy named Sam. Mia had a pretty shell. Sam had a little boat. They played together in the park. The boy was named",
+      "options": [
+        "Sara",
+        "Mia",
+        "Lily",
+        "Sam"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.001241034424419678,
+          0.013842597821040819,
+          0.0030206371851327005,
+          0.9818957305694069
+        ],
+        "codes": [
+          0.0911820911514189,
+          0.6767151408250931,
+          0.10964890029837641,
+          0.12245386772511163
+        ]
+      }
+    },
+    {
+      "id": "hand-16",
+      "category": "object_recall",
+      "prefix": "Lily had a ball. She bounced it on the ground. Then Lily showed a friend the",
+      "options": [
+        "kite",
+        "car",
+        "ball",
+        "doll"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.004344492309227536,
+          0.040892155440764424,
+          0.935275227916432,
+          0.019488124333576093
+        ],
+        "codes": [
+          0.12022028823196293,
+          0.5641237178267858,
+          0.12721299465446262,
+          0.18844299928678848
+        ]
+      }
+    },
+    {
+      "id": "hand-17",
+      "category": "object_recall",
+      "prefix": "Tom had a kite. He flew it high in the sky. Then Tom showed a friend the",
+      "options": [
+        "kite",
+        "ball",
+        "car",
+        "doll"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.9871192589947825,
+          0.008046262314216839,
+          0.0017517651170031936,
+          0.003082713573997389
+        ],
+        "codes": [
+          0.1342393226649815,
+          0.6317194864854787,
+          0.12058958614694981,
+          0.11345160470259003
+        ]
+      }
+    },
+    {
+      "id": "hand-18",
+      "category": "object_recall",
+      "prefix": "Sara had a doll. She dressed it in a little dress. Then Sara showed a friend the",
+      "options": [
+        "car",
+        "kite",
+        "doll",
+        "ball"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.06012770395727547,
+          0.00035338951355278674,
+          0.9363348625212002,
+          0.0031840440079715883
+        ],
+        "codes": [
+          0.08854261929028605,
+          0.58931347935275,
+          0.1373397515865148,
+          0.18480414977044912
+        ]
+      }
+    },
+    {
+      "id": "hand-19",
+      "category": "object_recall",
+      "prefix": "Ben had a car. He rolled it along the floor. Then Ben showed a friend the",
+      "options": [
+        "kite",
+        "car",
+        "ball",
+        "doll"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.0004809850033478817,
+          0.9478657346677221,
+          0.01551440855922986,
+          0.03613887176969998
+        ],
+        "codes": [
+          0.1458019821669328,
+          0.5863861059754398,
+          0.12489388627292103,
+          0.14291802558470626
+        ]
+      }
+    },
+    {
+      "id": "hand-20",
+      "category": "object_recall",
+      "prefix": "Lucy had a hat. She wore it on her head. Then Lucy showed a friend the",
+      "options": [
+        "doll",
+        "ball",
+        "hat",
+        "kite"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.3597428074215821,
+          0.07660208365699481,
+          0.5595316989685566,
+          0.004123409952866555
+        ],
+        "codes": [
+          0.08543107699514431,
+          0.7809535830455084,
+          0.06331532944016219,
+          0.07030001051918493
+        ]
+      }
+    },
+    {
+      "id": "hand-21",
+      "category": "object_recall",
+      "prefix": "Max had a boat. He floated it in the pond. Then Max showed a friend the",
+      "options": [
+        "doll",
+        "ball",
+        "kite",
+        "boat"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.004007541843646267,
+          0.014626498217941592,
+          0.0037640263388453023,
+          0.9776019335995669
+        ],
+        "codes": [
+          0.0813977198300807,
+          0.721612009179328,
+          0.08758291906885428,
+          0.10940735192173694
+        ]
+      }
+    },
+    {
+      "id": "hand-22",
+      "category": "object_recall",
+      "prefix": "Mia had a flower. She smelled it and smiled. Then Mia showed a friend the",
+      "options": [
+        "doll",
+        "ball",
+        "flower",
+        "kite"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.01000084356870058,
+          0.004145765086418694,
+          0.9855670168386111,
+          0.0002863745062694841
+        ],
+        "codes": [
+          0.11662702912099893,
+          0.723291983438249,
+          0.08132407136566665,
+          0.07875691607508539
+        ]
+      }
+    },
+    {
+      "id": "hand-23",
+      "category": "object_recall",
+      "prefix": "Sam had a book. He opened it and read a story. Then Sam showed a friend the",
+      "options": [
+        "doll",
+        "kite",
+        "ball",
+        "book"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.010133322730384083,
+          0.0014580368787007153,
+          0.007218128193724147,
+          0.9811905121971911
+        ],
+        "codes": [
+          0.09603332672531344,
+          0.6552672019803495,
+          0.15320634193367566,
+          0.0954931293606613
+        ]
+      }
+    },
+    {
+      "id": "hand-24",
+      "category": "yes_no_choice",
+      "prefix": "Lily had one toy. It was a ball.\nQuestion: Did Lily have a ball?\nAnswer:",
+      "options": [
+        "yes",
+        "no"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.23852077495627644,
+          0.7614792250437236
+        ],
+        "codes": [
+          0.2771896551712829,
+          0.7228103448287171
+        ]
+      }
+    },
+    {
+      "id": "hand-25",
+      "category": "yes_no_choice",
+      "prefix": "Tom had one toy. It was a kite.\nQuestion: Did Tom have a ball?\nAnswer:",
+      "options": [
+        "yes",
+        "no"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.24661662678166188,
+          0.753383373218338
+        ],
+        "codes": [
+          0.19832818779749586,
+          0.8016718122025042
+        ]
+      }
+    },
+    {
+      "id": "hand-26",
+      "category": "yes_no_choice",
+      "prefix": "Sara had one toy. It was a doll.\nQuestion: Did Sara have a doll?\nAnswer:",
+      "options": [
+        "no",
+        "yes"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.7075268856474273,
+          0.2924731143525727
+        ],
+        "codes": [
+          0.14377118161677865,
+          0.8562288183832214
+        ]
+      }
+    },
+    {
+      "id": "hand-27",
+      "category": "yes_no_choice",
+      "prefix": "Ben had one toy. It was a car.\nQuestion: Did Ben have a ball?\nAnswer:",
+      "options": [
+        "yes",
+        "no"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.29791357639590316,
+          0.7020864236040968
+        ],
+        "codes": [
+          0.22165064955126848,
+          0.7783493504487317
+        ]
+      }
+    },
+    {
+      "id": "hand-28",
+      "category": "yes_no_choice",
+      "prefix": "Lucy had one toy. It was a hat.\nQuestion: Did Lucy have a hat?\nAnswer:",
+      "options": [
+        "no",
+        "yes"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.7691759931655361,
+          0.2308240068344639
+        ],
+        "codes": [
+          0.10732292636820731,
+          0.8926770736317926
+        ]
+      }
+    },
+    {
+      "id": "hand-29",
+      "category": "yes_no_choice",
+      "prefix": "Max had one toy. It was a boat.\nQuestion: Did Max have a ball?\nAnswer:",
+      "options": [
+        "no",
+        "yes"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.623934184565765,
+          0.376065815434235
+        ],
+        "codes": [
+          0.08297965155868979,
+          0.9170203484413102
+        ]
+      }
+    },
+    {
+      "id": "hand-30",
+      "category": "yes_no_choice",
+      "prefix": "Mia had one toy. It was a flower.\nQuestion: Did Mia have a flower?\nAnswer:",
+      "options": [
+        "yes",
+        "no"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.22561076428713173,
+          0.7743892357128682
+        ],
+        "codes": [
+          0.1758508907760597,
+          0.8241491092239402
+        ]
+      }
+    },
+    {
+      "id": "hand-31",
+      "category": "yes_no_choice",
+      "prefix": "Sam had one toy. It was a book.\nQuestion: Did Sam have a ball?\nAnswer:",
+      "options": [
+        "yes",
+        "no"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.2614880808505016,
+          0.7385119191494983
+        ],
+        "codes": [
+          0.1642830301750883,
+          0.8357169698249116
+        ]
+      }
+    },
+    {
+      "id": "valid-3633-101",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a bear. The bear was thin. He lived in a big forest with many trees.\nOne day, the bear met a little girl. The little girl saw the thin bear and said, \"You are so thin!\" The bear felt embarrass. He did not like being called thin.\nThe bear wanted to be big and strong. So, he ate a lot of food. He ate and ate until he was not thin anymore. Now, the bear was big and strong. The little girl saw the bear again and said, \"You are so big and strong!\" The",
+      "options": [
+        "bike",
+        "pet",
+        "bug",
+        "bear"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.0000010437459615650106,
+          0.0000019045106262154068,
+          0.00008129061270442135,
+          0.9999157611307079
+        ],
+        "codes": [
+          0.031695048327962314,
+          0.8940239249871165,
+          0.023417336737376844,
+          0.05086368994754439
+        ]
+      }
+    },
+    {
+      "id": "valid-5767-103",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, in a small village, there lived a little girl named Mia. Mia loved to plan fun games for her friends. One day, Mia found a dry spot under a big tree. She thought it would be a great place to play.\n\"Let's have a tea party here,\" Mia told her friends, Sam and Lily. They all agreed and went to get their toys. Mia set up a table and chairs under the tree. The sun was shining, and the birds were singing. It was a day full of peace and happiness.\nDuring their tea party, Mia, Sam, and Lily",
+      "options": [
+        "climb",
+        "pretended",
+        "fly",
+        "talked"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.0006814232242667407,
+          0.21780489646722276,
+          0.00014682111973395793,
+          0.7813668591887766
+        ],
+        "codes": [
+          0.14751264156941163,
+          0.6065123641734914,
+          0.03837913354985004,
+          0.20759586070724706
+        ]
+      }
+    },
+    {
+      "id": "valid-5338-91",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a magical fairy. She was small, but very powerful; she had the ability to heal every living thing she touched. \nOne day she heard about a little boy who was very sick. She decided to fly to his aid and heal him with her magical powers. \nWhen she arrived at the boy's house, she found him lying in bed, very pale and weak. The fairy gently touched the boy, and he began to feel better straight away. He was filled with joy and thanked the",
+      "options": [
+        "colorful",
+        "fairy",
+        "finish",
+        "mighty"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.000017994858236449787,
+          0.9999729020493848,
+          6.51779347784699e-7,
+          0.000008451313030918197
+        ],
+        "codes": [
+          0.09200419426728995,
+          0.6849776795814277,
+          0.05798857576459018,
+          0.16502955038669218
+        ]
+      }
+    },
+    {
+      "id": "valid-4562-63",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a sleepy little rubber duck. He dreamed of the day he could fly away, far above the clouds, and explore the world.\nBut he couldn't fly quite yet. He needed to spruce up a bit and make himself more presentable. So every morning, he would take his rubbers and polish until his feathers shone bright yellow.\nIt",
+      "options": [
+        "brings",
+        "moved",
+        "hard",
+        "often"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.06095017143132189,
+          0.7084730189404116,
+          0.08760749996899428,
+          0.14296930965927238
+        ],
+        "codes": [
+          0.04444533794696542,
+          0.879626751782744,
+          0.027134918724353713,
+          0.04879299154593678
+        ]
+      }
+    },
+    {
+      "id": "valid-2995-44",
+      "category": "validation_cloze",
+      "prefix": "One day, Tom went on a search. Tom wanted to find something special for today. He looked in the sky but there was nothing there. He looked in his garden and it was empty. He looked everywhere but he couldn't find anything. \nJust when",
+      "options": [
+        "Mom",
+        "Tim",
+        "Bob",
+        "Tom"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.00013273489890119943,
+          0.0013017430459160498,
+          0.0023081429771692097,
+          0.9962573790780135
+        ],
+        "codes": [
+          0.2716372190316604,
+          0.6157226478794517,
+          0.06663003541174028,
+          0.046010097677147636
+        ]
+      }
+    },
+    {
+      "id": "valid-201-72",
+      "category": "validation_cloze",
+      "prefix": "Lily and Ben are playing in the living room. They see a letter on the table. It is for their mom. Lily wants to open it. She is curious.\n\"Let me see, let me see!\" she says. She grabs the letter and tries to tear it.\n\"No, no, no!\" Ben says. He is careful. He knows mom will be angry if they open her letter. He tries to take the letter from",
+      "options": [
+        "Tom",
+        "Anna",
+        "Lily",
+        "Mom"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.0032643619041717027,
+          0.00518229877935069,
+          0.9270897787756609,
+          0.06446356054081673
+        ],
+        "codes": [
+          0.3446575149363314,
+          0.4592606832545013,
+          0.15973662730322866,
+          0.036345174505938535
+        ]
+      }
+    },
+    {
+      "id": "valid-1425-47",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a mommy and a daddy who wanted to create something fun and special. So they decided to make a holiday!\nThey got out their pretty colors and made a bright sign. They decorated the whole house with balloons and painted some",
+      "options": [
+        "fun",
+        "funny",
+        "kind",
+        "food"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.13927276774245845,
+          0.6138674969198582,
+          0.018177439073871107,
+          0.22868229626381206
+        ],
+        "codes": [
+          0.24129949403488657,
+          0.5968660285015442,
+          0.044092569826062335,
+          0.11774190763750697
+        ]
+      }
+    },
+    {
+      "id": "valid-1799-144",
+      "category": "validation_cloze",
+      "prefix": " But the monster was not very flexible. Whenever it made plans, it would stick to them very tightly, no matter how much the people around it asked it to change its plans.\nOne day, the monster made a promise that it would take a group of people on a fun activity. Everyone was excited! But then they started to argue over what activity they should do. The monster heard the arguing, and it started to worry. It felt like it couldn't keep its promise if the people couldn't agree on what to do.\nBut then something amazing happened. The monster watched as the people kept talking. And then it saw",
+      "options": [
+        "something",
+        "each",
+        "kids",
+        "playing"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.991877815023415,
+          0.007425808958675721,
+          0.000548135049340578,
+          0.0001482409685686477
+        ],
+        "codes": [
+          0.12075383814607538,
+          0.7497494282955646,
+          0.03508196018863971,
+          0.09441477336972046
+        ]
+      }
+    },
+    {
+      "id": "valid-4896-96",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time there was a boy named Mike. One day, Mike decided he wanted to try something new and went to explore in the desert. As he walked through the desert, he saw a funny looking cactus. He was very curious about it and decided to try touching it. Suddenly, he heard a loud noise! Mike was so embarrassed and quickly ran back home. That night, he told his mom what had happened. \nMike's mom said, \"That's weird, Mike! You should never touch a cactus!\"\nMike replied, \"I won't mom, I promise!\" \nAnd ever",
+      "options": [
+        "wants",
+        "since",
+        "seeing",
+        "pinched"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.000003478189374059576,
+          0.9999152037364384,
+          0.00008064410392475828,
+          6.739702628810991e-7
+        ],
+        "codes": [
+          0.21395291582361559,
+          0.675408769304877,
+          0.06301743622595429,
+          0.047620878645553
+        ]
+      }
+    },
+    {
+      "id": "valid-6183-121",
+      "category": "validation_cloze",
+      "prefix": " outside in the sun. One day, Max's owner, Timmy, said \"Max, let's go to the park!\" Max was so excited that he wagged his tail really fast.\nAt the park, Max saw a big lab. The lab was wet from swimming in the pond. Max wanted to play with the lab, but the lab growled and said \"No! I don't want to play with you!\" Max was sad and didn't understand why the lab didn't want to play.\nTimmy saw that Max was sad and said \"Max, let's go lay in the sun instead!\" Max was happy again and wagged his tail. As they laid in the",
+      "options": [
+        "lady",
+        "children",
+        "sun",
+        "brave"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.000017899030065922587,
+          0.00004622453006118382,
+          0.9999348408884947,
+          0.000001035551378263969
+        ],
+        "codes": [
+          0.09556200265216024,
+          0.6893338518456387,
+          0.026462077101200968,
+          0.18864206840100006
+        ]
+      }
+    },
+    {
+      "id": "valid-5321-82",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time there was a little girl called June. June was a very happy girl and loved to play with her friends.\nOne day June was walking in the garden and saw a seed. The seed was very small. She decided to take it home.\nWhen she got home, June planted the seed in the ground and watered it. Each day Junewould look outside to see if the seed had grown.\nAfter a few days, June saw the seed had",
+      "options": [
+        "smiles",
+        "ten",
+        "grown",
+        "believed"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.000012512616441736178,
+          0.00002840723789631917,
+          0.999841178351408,
+          0.00011790179425403809
+        ],
+        "codes": [
+          0.4226806708113606,
+          0.45419446920015893,
+          0.056393236775231,
+          0.06673162321324942
+        ]
+      }
+    },
+    {
+      "id": "valid-3152-42",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a little girl named Lily. She loved to play with her toys, but sometimes she got bored. One day, she went to her mom and said, \"Mommy, I want to destroy the furniture!\"\nHer mom was",
+      "options": [
+        "strange",
+        "surprised",
+        "walking",
+        "mud"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.00010824556164150203,
+          0.9972111519186739,
+          0.002654765014150221,
+          0.000025837505534439075
+        ],
+        "codes": [
+          0.27022044512294213,
+          0.5921624067523655,
+          0.09338972815538694,
+          0.04422741996930536
+        ]
+      }
+    },
+    {
+      "id": "valid-4961-114",
+      "category": "validation_cloze",
+      "prefix": " three toys; a teddy bear, a ball and a piece of wool. Every day she would make up games for these three toys. \nOne day, she was playing with the wool when an idea came to her. She said to the wool \"Let's be crazy!\" The wool just lay there. \nThe girl was a little disappointed, so she hopped up and ran over to the teddy bear. To the teddy bear she said, \"Let's go crazy!\" \nThe bear smiled and said \"Yes! Let's go crazy, with the wool!\" \nSo the girl, the teddy bear and the piece of wool all ran around in",
+      "options": [
+        "circles",
+        "excitement",
+        "comfy",
+        "sand"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.9951781689640804,
+          0.004518908003229315,
+          0.00003456803036562614,
+          0.0002683550023245507
+        ],
+        "codes": [
+          0.05771888649883331,
+          0.8281387022546342,
+          0.03275532679612839,
+          0.08138708445040406
+        ]
+      }
+    },
+    {
+      "id": "valid-5424-101",
+      "category": "validation_cloze",
+      "prefix": "Jill is a 3 year old girl who loves to draw. Everywhere she goes she always has her pen. One day, Jill was on a visit with her family to a park. When the family arrived, Jill saw a gate around the park. \nJill asked her father, \"What is that?\"\nHer father explained, \"That is a gate. We need to lock it when we enter and leave the park.\"\nJill went to the gate and started to push it. Her father said, \"Let me help you.\" He pushed the gate and locked it. \nJill was amazed by the gate and wanted to",
+      "options": [
+        "learn",
+        "dad",
+        "jump",
+        "visit"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.9436149973636142,
+          0.004836628648952329,
+          0.030216497398618977,
+          0.021331876588814466
+        ],
+        "codes": [
+          0.15080587775321697,
+          0.6956689039303109,
+          0.0387006167734804,
+          0.11482460154299165
+        ]
+      }
+    },
+    {
+      "id": "valid-246-114",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a girl named Lily. She loved to eat fruits and vegetables because they were healthy. Her mommy always cut them with a knife before giving them to her. \nOne day, Lily wanted to own her own knife so she could help her mommy. She asked her mommy if she could have one. Her mommy said she could have a special kid's knife that was safe for her to use. \nLily was so happy to have her own knife. She used it to cut up some apples and carrots for a snack. Her mommy was proud of her for being so helpful. From then on, Lily used her own",
+      "options": [
+        "unique",
+        "knife",
+        "cool",
+        "tooth"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.0015348784232689936,
+          0.9966134987102068,
+          0.0002669880757091087,
+          0.0015846347908151383
+        ],
+        "codes": [
+          0.14697323180325067,
+          0.6846964160153747,
+          0.0719246880166027,
+          0.09640566416477203
+        ]
+      }
+    },
+    {
+      "id": "valid-3242-106",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a pretty little girl named Lucy. She had a best friend named Tom. Tom was always very kind to Lucy.\nOne day, Lucy decided to go visit Tom. She packed her bag with her favorite things and set off. But on her way, Lucy started to worry. What if Tom wasn't home when she arrived? What if he was busy and couldn't play with her?\nJust as Lucy was about to give up hope, she heard a voice calling to her. It was Tom! He had stayed up just to wait for her. \nTom gave Lucy a big hug as",
+      "options": [
+        "easy",
+        "soon",
+        "shiny",
+        "well"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.0025611919043275694,
+          0.5952457376170555,
+          0.005055167837076005,
+          0.397137902641541
+        ],
+        "codes": [
+          0.1675371567029076,
+          0.7081587561160253,
+          0.04969806459098012,
+          0.074606022590087
+        ]
+      }
+    },
+    {
+      "id": "valid-2031-121",
+      "category": "validation_cloze",
+      "prefix": " said, \"No, I want to do some work. I'm too cold to crawl!\"\nJohn didn't want to listen. He kept crawling and said, \"C'mon Ann, it's so much fun!\"\nAnn stayed still and said, \"No, I'm cold and want to do something else!\"\nJohn got really angry. He said, \"Fine, I'm going to crawl by myself then!\" He crawled away angrily.\nBut he quickly got cold and lonely. He realized he missed Ann! He crawled back to her and said, \"Can we play together now, Ann? I'm sorry I was so mad.\"\nAnn",
+      "options": [
+        "came",
+        "started",
+        "smiled",
+        "saw"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.020410235139096334,
+          0.09237346782565857,
+          0.8557354017895128,
+          0.03148089524573234
+        ],
+        "codes": [
+          0.06600230840610764,
+          0.7081900234486352,
+          0.11045561177282393,
+          0.11535205637243323
+        ]
+      }
+    },
+    {
+      "id": "valid-3160-117",
+      "category": "validation_cloze",
+      "prefix": " a little girl named Lily who loved to play with her toys. One day, she decided to have a tea party with her stuffed animals. She planned everything carefully, making sure to set the table with cups, saucers, and plates.\nAs she was pouring the tea, she noticed one of her stuffed animals, a bear named Teddy, was looking sad. She asked him what was wrong, and he told her he was feeling sick. Lily knew she had to be patient with Teddy and take care of him.\nAfter the tea party was over, Lily put Teddy to bed and read him a story. She made sure he had plenty of",
+      "options": [
+        "make",
+        "water",
+        "fairy",
+        "sunshine"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.009402853728458725,
+          0.987765056532857,
+          0.0016007386607822765,
+          0.0012313510779019138
+        ],
+        "codes": [
+          0.07620450012450627,
+          0.7360290627755297,
+          0.05458187457831132,
+          0.13318456252165262
+        ]
+      }
+    },
+    {
+      "id": "valid-3882-61",
+      "category": "validation_cloze",
+      "prefix": "Nina and her dad were in the country. They were looking at a stable. It seemed old, like it had been there for a long time.\nNina and her dad went inside the stable. It looked unusual. There were lots of animals in there, and they made lots of funny noises. Some of the animals seemed friendly, and some the animals",
+      "options": [
+        "tried",
+        "clapped",
+        "seemed",
+        "heard"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.03150865913049922,
+          0.25321662446912596,
+          0.6322908514965476,
+          0.08298386490382718
+        ],
+        "codes": [
+          0.06591628165212605,
+          0.7831749572433855,
+          0.025807665390637894,
+          0.12510109571385047
+        ]
+      }
+    },
+    {
+      "id": "valid-2005-117",
+      "category": "validation_cloze",
+      "prefix": "ed in to look at it, but was startled when a big, red balloon bounced out of nowhere. The bunny jumped back, feeling scared. He quickly hopped to safety.\nJust then, a little girl walked around the corner, clapping her hands. She was very excited when she saw the big, red balloon. She scooped it up with her tiny hands and shouted, \"Wheeee! This is so much fun!\"\nThe bunny watched as she bounced the balloon up and down in the air. He laughed and said, \"It sure is a lot of fun bouncing a balloon.\"\nThe girl smiled and said, \"Yes, I",
+      "options": [
+        "love",
+        "teach",
+        "passed",
+        "used"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.9871446247049253,
+          0.0009597388869726995,
+          0.0035169329587757645,
+          0.008378703449326178
+        ],
+        "codes": [
+          0.09917948309182242,
+          0.5885989792791168,
+          0.029763830862874797,
+          0.282457706766186
+        ]
+      }
+    },
+    {
+      "id": "valid-5891-71",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there were two friends, Ann and Will. They liked to have fun and play together. One day, Ann had a plan. She wanted to build a raft and go for a float in the river. Will thought this was a great idea.\nThey found some wood and sticks and began to build their raft. They worked very hard and soon it was done. The raft was all",
+      "options": [
+        "wore",
+        "ready",
+        "ate",
+        "going"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.005645494076684998,
+          0.9421346597423493,
+          0.0005458560527087629,
+          0.05167399012825677
+        ],
+        "codes": [
+          0.06346946560936038,
+          0.7398490595098182,
+          0.034467743239532375,
+          0.16221373164128913
+        ]
+      }
+    },
+    {
+      "id": "valid-5889-51",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a happy little boy named John. He liked to go outdoors and play in the garden. \nOne day, he found a big gear in his backyard. It was made of metal and had lots of spirals and loops. He was so excited and wanted to",
+      "options": [
+        "walking",
+        "always",
+        "play",
+        "lots"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.00004379742062038086,
+          0.00029828224895558176,
+          0.9995702317522074,
+          0.00008768857821655243
+        ],
+        "codes": [
+          0.09034986061287253,
+          0.7849632048381946,
+          0.0515957503332128,
+          0.0730911842157201
+        ]
+      }
+    },
+    {
+      "id": "valid-4471-71",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a little boy named Jake. Jake loved eating cereal and he especially liked the wild berries in his cereal. \nOne morning, Jake kept worrying about where to find more wild berries. He asked his mom if he could go outside and look for them, but she said no. Jake was getting worried because he wanted to eat his wild cereal. \nSuddenly, Jake remembered something. The",
+      "options": [
+        "songs",
+        "night",
+        "dangerous",
+        "bug"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.003552317609555883,
+          0.3679096277372101,
+          0.09814670918110258,
+          0.5303913454721314
+        ],
+        "codes": [
+          0.21142322603814567,
+          0.6637695157770311,
+          0.09172478319385115,
+          0.0330824749909719
+        ]
+      }
+    },
+    {
+      "id": "valid-4153-99",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a dependable dog named Max. Max liked to help his family. Every day, Max would pour water for his family to drink. He would also help them turn the switch on and off to make the room bright or dark.\nOne day, Max saw a little bird who was thirsty. The bird could not find water to drink. Max wanted to help the bird. He found a small cup and poured water into it. The little bird drank the water and was very happy.\nMax and the little bird became good friends. They",
+      "options": [
+        "played",
+        "use",
+        "left",
+        "looked"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.9979361577330398,
+          0.00009573452701647029,
+          0.00020556962227141128,
+          0.00176253811767241
+        ],
+        "codes": [
+          0.09869824009504238,
+          0.7028629245185161,
+          0.07604257170471918,
+          0.12239626368172242
+        ]
+      }
+    },
+    {
+      "id": "valid-1110-137",
+      "category": "validation_cloze",
+      "prefix": " backyard. What she saw was the most beautiful sight! There was a field of pale grass that seemed to go on forever. When she saw it, she was filled with happiness, and she ran out to explore.\nAs she ran, she felt the soft blades of grass between her toes. She laughed and skipped and twirled through the grass, feeling so much joy. Time passed quickly, and before she knew it, the sun was setting. Mary sighed and said goodbye to the grass, not wanting to leave.\nThe days went by, but Mary could still feel the grass tickling her toes. She missed the soft feeling and the",
+      "options": [
+        "pale",
+        "hive",
+        "diary",
+        "chalk"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.8554197132267435,
+          0.11352240228591047,
+          0.006140975573711315,
+          0.024916908913634662
+        ],
+        "codes": [
+          0.10011572307396151,
+          0.6180031988056147,
+          0.028665911020444183,
+          0.25321516709997965
+        ]
+      }
+    },
+    {
+      "id": "valid-2955-64",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a small sack. The sack contained lots of things that were difficult to understand. One day, the sack started to talk. It asked the little three year old for help.\nThe child was surprised and scared, but was also curious. So, the child decided to listen to the sack. The sack told the child about all the difficult",
+      "options": [
+        "because",
+        "things",
+        "thing",
+        "job"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.00007706750098092433,
+          0.9973833352606922,
+          0.0014827140092413238,
+          0.0010568832290853976
+        ],
+        "codes": [
+          0.3941993285635436,
+          0.45869739033741236,
+          0.06019141337303585,
+          0.08691186772600815
+        ]
+      }
+    },
+    {
+      "id": "valid-4026-50",
+      "category": "validation_cloze",
+      "prefix": "Tommy was very enthusiastic about cleaning. He liked to help his mom and dad with the chores. He would sweep the floor, wipe the table, and put away his toys. He felt happy and proud when he saw how nice the house looked.\nOne day, Tommy wanted to help his",
+      "options": [
+        "back",
+        "toys",
+        "mom",
+        "best"
+      ],
+      "label": 2,
+      "probabilities": {
+        "sum": [
+          0.0000020417306375772495,
+          0.00042550492863958867,
+          0.9995346609406938,
+          0.00003779240002883803
+        ],
+        "codes": [
+          0.06621442024446042,
+          0.7650981242812329,
+          0.08548605620551289,
+          0.08320139926879382
+        ]
+      }
+    },
+    {
+      "id": "valid-1688-35",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a little boy named Timmy. Timmy loved to play with his toys and run around outside. One day, Timmy's mom told him that he had to clean up his",
+      "options": [
+        "broken",
+        "eyes",
+        "window",
+        "toys"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.000203950376294075,
+          0.00016617289936281073,
+          0.00006144296766085716,
+          0.9995684337566821
+        ],
+        "codes": [
+          0.07746430261828834,
+          0.6779885324338812,
+          0.1076023684890997,
+          0.13694479645873076
+        ]
+      }
+    },
+    {
+      "id": "valid-1970-75",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a dad and a kid who lived in a cozy little home. Dad was always telling the kid to eat their breakfast and be good. One morning, Dad said, \"We are going on an adventure today\". So they packed their stuff and got ready to go on their journey. \nThe dad and kid had been walking for a while when it started to rain. Then it started to get",
+      "options": [
+        "nice",
+        "shiny",
+        "help",
+        "dark"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.002118776504370994,
+          0.00008493152690643143,
+          0.00011946001374549523,
+          0.9976768319549771
+        ],
+        "codes": [
+          0.035564643853148434,
+          0.8257417872775286,
+          0.026446581952671883,
+          0.11224698691665115
+        ]
+      }
+    },
+    {
+      "id": "valid-5270-87",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a farmer. Every morning, he got up early and shot his bow and arrow. He was looking for sheep in the fields. One day, he saw something in the distance. He took aim and shot his arrow. It flew through the air and landed in a big, empty meadow. He walked over and saw a sheep! He picked it up and took it back to his farm. The farmer was very happy that he had found the sheep. He gave it",
+      "options": [
+        "showed",
+        "lots",
+        "like",
+        "realized"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.00016436059340502307,
+          0.9984810036460533,
+          0.0013170047338283625,
+          0.00003763102671331507
+        ],
+        "codes": [
+          0.17247115708465674,
+          0.6860721855108697,
+          0.03674145474573795,
+          0.10471520265873563
+        ]
+      }
+    },
+    {
+      "id": "valid-3166-69",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a dog named Max. Max loved to run and play in the park with his owner. His owner always put a leash on him to keep him safe. One day, a weird man came to the park and talked to Max's owner. The man ordered Max's owner to give him the leash and then he ran away with Max.\nMax's owner was very",
+      "options": [
+        "long",
+        "top",
+        "clean",
+        "sad"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.00003111453321148791,
+          0.0000015681608581770983,
+          0.00025269355313965513,
+          0.9997146237527907
+        ],
+        "codes": [
+          0.10287101482843172,
+          0.801250218364195,
+          0.04286717712255578,
+          0.05301158968481754
+        ]
+      }
+    },
+    {
+      "id": "valid-6304-101",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a little girl named Lily who loved waffles. Every morning, her mother would make her a big waffle for breakfast. One day, Lily's mother said, \"Lily, I have a surprise for you. We're going to visit Grandma today and she has a special waffle recipe.\"\nLily was so excited to try Grandma's waffles. As they drove to Grandma's house, Lily saw a big scary tree. She said, \"Mommy, that tree looks frightened.\" Her mother said, \"Don't worry, it's just an old tree.\"\nWhen they arrived at Grandma's house, Lily saw a big present wrapped in",
+      "options": [
+        "boxes",
+        "colorful",
+        "full",
+        "difficult"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.012682258002655062,
+          0.9871937363145313,
+          0.00008216589113571887,
+          0.000041839791677727454
+        ],
+        "codes": [
+          0.20579249893716747,
+          0.714488157039604,
+          0.02880413838378159,
+          0.050915205639446924
+        ]
+      }
+    },
+    {
+      "id": "valid-6769-98",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a brown carpet. It was soft and furry. One day, someone sent the carpet flying up into the sky. The carpet soared and glided through the clouds. It floated above green hills and blue seas.\nWhen the carpet finally came down, it landed in a big field. It was soft and cozy, so the animals decided to use it as a bed. Rabbits, foxes, and birds all slept on the comfortable carpet.\nAt night, the stars twinkled down and lit up the carpet. The carpet glowed in the starlight and the animals",
+      "options": [
+        "soon",
+        "waved",
+        "began",
+        "felt"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.018205028089371383,
+          0.17793541268573726,
+          0.1638394975013947,
+          0.6400200617234967
+        ],
+        "codes": [
+          0.07950308969049731,
+          0.7319965253619898,
+          0.03759572941786644,
+          0.15090465552964658
+        ]
+      }
+    },
+    {
+      "id": "valid-5053-72",
+      "category": "validation_cloze",
+      "prefix": "One day, a girl named Lucy was playing outside in her backyard. She saw a thin spin on the ground. She bent down to pick it up. \n\"Hi, little spin!\" Lucy said. \nThe spin said \"Hi!\" to her. \n\"Do you want to play with me in my station?\" Lucy asked. Thespin was so excited that it started to jump up and down. \nThe spin and Lucy went to the station. They started",
+      "options": [
+        "yelling",
+        "washing",
+        "hurting",
+        "spinning"
+      ],
+      "label": 3,
+      "probabilities": {
+        "sum": [
+          0.0662499261886048,
+          0.0014571066620099795,
+          0.0008043016591670252,
+          0.9314886654902181
+        ],
+        "codes": [
+          0.0649198675180398,
+          0.8125366682452576,
+          0.024706140527933445,
+          0.0978373237087691
+        ]
+      }
+    },
+    {
+      "id": "valid-676-40",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time there was a little girl named Sarah. She lived in a big house with her mom and dad. Sarah had a special vase that was bright and pretty.\nOne day, Sarah wanted to make the vase",
+      "options": [
+        "look",
+        "until",
+        "fell",
+        "looked"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.9973455631242277,
+          0.0020776396617924074,
+          0.00004096602295189053,
+          0.0005358311910278979
+        ],
+        "codes": [
+          0.09225414340937622,
+          0.745612163148167,
+          0.07033938454453588,
+          0.09179430889792085
+        ]
+      }
+    },
+    {
+      "id": "valid-4871-53",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a little bunny named Benny. He loved to eat carrots and play with his friends. One day, Benny found a menu in the forest. It had pictures of all kinds of yummy foods on it. Benny wanted to try everything on the menu!\nSo, he asked his",
+      "options": [
+        "friend",
+        "ground",
+        "first",
+        "sad"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.9991430040922251,
+          0.00001143530916856913,
+          0.0007572097215247562,
+          0.000088350877081496
+        ],
+        "codes": [
+          0.05402548965319903,
+          0.8025719713614853,
+          0.09806245542368726,
+          0.045340083561628365
+        ]
+      }
+    },
+    {
+      "id": "valid-3725-143",
+      "category": "validation_cloze",
+      "prefix": " an adventure.\nThey piled into the car and drove to the park. The mouse was so happy to see the trees and the birds chirping. He wanted to explore and had so much fun!\nThen it started to rain. Everyone had to hurry to find shelter. The mouse found a small space between two big trees that had a cord in it. He ran over and got under it.\nThe cord was old and dirty. The mouse was so cold and wet but it was better than getting even wetter. The rain stopped and everyone got back in the car and left.\nThe mouse stayed and partied. He had a wonderful time",
+      "options": [
+        "began",
+        "playing",
+        "together",
+        "closer"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.00009912997707088148,
+          0.9629154095166702,
+          0.03692442081910903,
+          0.00006103968715000779
+        ],
+        "codes": [
+          0.07898017534170707,
+          0.6660662432941945,
+          0.02840517396398415,
+          0.22654840740011437
+        ]
+      }
+    },
+    {
+      "id": "valid-1700-108",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a hero. He was very brave and strong. He saved people from danger. One day, he went to sleep in his bed. He had a dream that made him nervous. He woke up in the middle of the night and couldn't go back to sleep.\nThe next day, the hero went to save people from a fire. He was nervous because it was a big fire. He went inside the building to save a little girl. But the fire was too strong. The hero couldn't save the little girl and he got hurt. He was taken to the hospital, but he didn't",
+      "options": [
+        "make",
+        "feel",
+        "ever",
+        "find"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.6988125102072187,
+          0.22337045552934626,
+          0.041989061637248595,
+          0.03582797262618638
+        ],
+        "codes": [
+          0.2734255127522329,
+          0.5075623203144112,
+          0.055346421294529824,
+          0.163665745638826
+        ]
+      }
+    },
+    {
+      "id": "valid-1546-109",
+      "category": "validation_cloze",
+      "prefix": "Once upon a time, there was a little boy named Jack. Jack was very restless and couldn't sit still for long. One day, Jack's mom took him to the toy store to buy him a new toy. Jack was very happy and excited.\nAt the store, Jack saw a toy car that he really liked. He asked his mom to buy it for him. But his mom said, \"Jack, you already have so many toys. Maybe we should save our money for something else.\"\nJack was disappointed and started to cry. He didn't understand why he couldn't have the toy car. But then, a kind old man who was",
+      "options": [
+        "cozy",
+        "standing",
+        "determined",
+        "harsh"
+      ],
+      "label": 1,
+      "probabilities": {
+        "sum": [
+          0.0003399719088555693,
+          0.8003035286172293,
+          0.1871146378420972,
+          0.012241861631817836
+        ],
+        "codes": [
+          0.12608572824404576,
+          0.7343480679597502,
+          0.04526494879116138,
+          0.09430125500504277
+        ]
+      }
+    },
+    {
+      "id": "valid-5523-35",
+      "category": "validation_cloze",
+      "prefix": "Lila and Max were playing with their toys in the living room. They liked to pretend they were space explorers, and they had a yellow laser that made funny noises. Lila held the laser and",
+      "options": [
+        "pointed",
+        "round",
+        "shoes",
+        "married"
+      ],
+      "label": 0,
+      "probabilities": {
+        "sum": [
+          0.9871984346639074,
+          0.011263502489896061,
+          0.0004393033915441826,
+          0.0010987594546521204
+        ],
+        "codes": [
+          0.16214082013566977,
+          0.655247177872319,
+          0.04942537727367228,
+          0.1331866247183389
+        ]
+      }
+    }
+  ]
+}

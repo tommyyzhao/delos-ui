@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark">
+  <title>DELOS — System One Lab</title><link rel="stylesheet" href="style.css">
+</head>
+<body class="s1-body">
+<main class="console s1-console" aria-label="Delos experimental System One lab">
+  <header class="topbar">
+    <a class="logo" href="index.html" aria-label="Delos token console">DELOS</a>
+    <nav aria-label="System modules"><a class="tab" href="index.html">CODE</a><span class="tab">HOSTS</span><span class="tab">SOFTWARE</span><a class="tab active" href="decide.html" aria-current="page">MODS</a><span class="tab">INFO</span><span class="tab">DATA</span></nav>
+    <div class="system-status"><span class="status-dot"></span><span id="system-status">LOADING HOST</span><span class="status-divider">/</span> LOCAL INFERENCE <span class="status-divider">/</span> ADMIN</div>
+  </header>
+  <section class="s1-heading"><div><span class="s1-kicker">EXPERIMENTAL / 15,237,266 PARAMETERS / TINYSTORIES</span><h1>SYSTEM ONE LAB</h1></div><p>Typed judgments. No generated answers.<br><strong>A real GPT continuation adapter — not Jev or Clef.</strong></p></section>
+  <section class="s1-evidence" aria-label="Feasibility probe results">
+    <div><strong>87.4%</strong><span>CHOICE ACCURACY · n=182<br>ECE .044 · Brier .171 · hand-written 75% (n=32)</span></div>
+    <div><strong>28.0%</strong><span>ANSWER LETTERS · n=182<br>Chance 26.1% · confident wrong answers</span></div>
+    <div><strong>≈ .90</strong><span>SCORE SPEARMAN · n=20<br>Noul AUROC .44–.49 · n=40 · unreliable</span></div>
+    <p>SUM log-probabilities · T=1<br>T≈1.12 did not improve held-out ECE (n=91).<br>Small probe, not a deployment guarantee.</p>
+  </section>
+  <nav class="s1-routes" aria-label="System One experiments"><a href="#/playground">01 PLAYGROUND</a><a href="#/fanout">02 FAN-OUT</a><a href="#/gate">03 CONFIDENCE GATE</a><a href="#/forge">04 HOST FORGE</a><a href="#/calibration">05 CALIBRATION</a><button id="texture" type="button" aria-pressed="false">CHART TEXTURE</button></nav>
+  <p class="s1-mapping">LOCAL MAPPING: <code>state: {story: "…"}</code> becomes story text; other state objects become JSON. <code>instructions</code> is a cloze lead-in appended after state. Each <code>criteria</code> value is literal continuation text scored with a leading space. Scores use level indices, not numeric text. <span>Shared KV prefix, sequential suffix scoring — not a joint System One pass.</span></p>
+  <div id="route" aria-live="polite"></div>
+  <p id="app-message" class="s1-message" role="status"></p>
+  <footer><span>DELOS INCORPORATED <i> / </i> EXPERIMENTAL HOST JUDGMENTS</span><span>LOCAL GPT <i> / </i> NO REMOTE INFERENCE <i> / </i> <a href="index.html">RETURN TO TOKEN TREE</a></span></footer>
+  <div class="loading-overlay" id="loading-overlay" role="status" aria-live="polite"><h2 id="loading-title">LOADING HOST…</h2><progress id="loading-progress" aria-label="Model loading"></progress><p id="loading-detail">Loading local tokenizer and weights.</p></div>
+</main>
+<script type="module" src="decide.js"></script>
+</body>
+</html>
