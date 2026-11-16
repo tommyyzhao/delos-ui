@@ -295,7 +295,8 @@ try {
   if (location.protocol === 'file:') throw new Error('Browser modules need HTTP. Serve with `python3 -m http.server` then open http://localhost:8000/');
   const stub = params.has('stub');
   const engine = await import(stub ? './dev/stub-engine.js' : './engine.js');
-  if (!stub && !navigator.gpu) fail('WEBGPU REQUIRED', 'This host runs a 0.8B-parameter model on your GPU. WebGPU is required (Chrome/Edge 113+, Safari 26+). There is no WASM fallback at this size.');
+  if (!stub && !isSecureContext) fail('SECURE PAGE REQUIRED', `Browsers only enable WebGPU on secure pages. Open this page over https:// or at http://localhost / 127.0.0.1 (this page is plain HTTP on ${location.host}).`);
+  else if (!stub && !navigator.gpu) fail('WEBGPU REQUIRED', 'This host runs a 0.8B-parameter model on your GPU. WebGPU is required (Chrome/Edge 113+, Safari 26+). There is no WASM fallback at this size.');
   else {
     const cached = stub || await engine.isCached(), mb = Math.round(engine.MODEL.bytes / 1e6);
     if (cached) await loaded(engine);

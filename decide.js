@@ -344,11 +344,18 @@ function setPhase(text, status) {
   cache.busy(text === 'LOADING');
 }
 
+// WebGPU is exposed only on secure origins (https or localhost); say which cause applies.
+function noWebGPU() {
+  $('loading-title').textContent = isSecureContext ? 'NO WEBGPU' : 'SECURE PAGE REQUIRED';
+  $('loading-detail').textContent = isSecureContext
+    ? 'System One needs WebGPU. Use a current Chrome or Edge with WebGPU enabled.'
+    : `Browsers only enable WebGPU on secure pages. Open this page over https:// or at http://localhost / 127.0.0.1 (this page is plain HTTP on ${location.host}).`;
+  $('load').hidden = true;
+}
+
 async function load() {
   if (!hasWebGPU()) {
-    $('loading-title').textContent = 'NO WEBGPU';
-    $('loading-detail').textContent = 'System One needs WebGPU. Use a current Chrome or Edge with WebGPU enabled.';
-    $('load').hidden = true;
+    noWebGPU();
     return;
   }
   $('load').disabled = true;
@@ -403,9 +410,7 @@ $('run').addEventListener('click', run);
 fillPresets();
 loadPreset(ui.preset);
 if (!hasWebGPU()) {
-  $('loading-title').textContent = 'NO WEBGPU';
-  $('loading-detail').textContent = 'System One needs WebGPU. Use a current Chrome or Edge with WebGPU enabled.';
-  $('load').hidden = true;
+  noWebGPU();
 } else {
   $('loading-overlay').hidden = false;
   $('loading-detail').textContent = takeNote() + $('loading-detail').textContent;
