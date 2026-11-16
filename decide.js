@@ -206,13 +206,13 @@ function loadPreset(key) {
   $('state').value = p.state;
   $('state-error').hidden = true;
   renderQuestions();
-  clearAnswers();
 }
 
 function renderQuestions() {
   const box = $('questions');
   box.replaceChildren(...ui.questions.map((q, idx) => questionEditor(q, idx)));
   $('add-question').disabled = ui.questions.length >= 12;
+  schedule(0);
 }
 
 function questionEditor(q, idx) {
@@ -241,17 +241,14 @@ function fillPresets() {
     el('option', { value: k, ...(k === ui.preset ? { selected: '' } : {}) }, p.label)));
 }
 
-function clearAnswers() {
-  $('answers').replaceChildren(el('p', { class: 's1-note' }, 'Load the model, then run.'));
-}
-
-// Editor events: state, preset switch, add, reset.
+// Editor events: preset switch, add, reset; any field edit re-runs (debounced).
 $('preset').addEventListener('change', e => loadPreset(e.target.value));
 $('reset').addEventListener('click', () => loadPreset(ui.preset));
 $('add-question').addEventListener('click', () => {
   ui.questions.push({ id: `q${ui.nextId++}`, type: 'choice', instructions: '', text: 'yes: affirmative\nno: negative' });
   renderQuestions();
 });
+document.querySelector('.s1-workspace').addEventListener('input', () => schedule());
 $('state').addEventListener('input', () => {
   try { parseState($('state').value); $('state-error').hidden = true; }
   catch (err) { $('state-error').textContent = err.message; $('state-error').hidden = false; }
@@ -290,7 +287,13 @@ function answerCard(r, idx) {
 
 function renderAnswers(results) {
   const box = $('answers');
+  box.classList.remove('stale');
+  if (!results.length) { box.replaceChildren(el('p', { class: 's1-note' }, 'Add a question to see answers.')); return; }
+  // Re-runs happen on every edit: keep whichever inspectors the user had open.
+  const key = (a, i) => `${a.dataset.qid}/${i}`;
+  const open = new Set([...box.querySelectorAll('.s1-answer')].flatMap(a => [...a.querySelectorAll('details')].map((d, i) => d.open && key(a, i))));
   box.replaceChildren(...results.map(answerCard));
+  box.querySelectorAll('.s1-answer').forEach(a => a.querySelectorAll('details').forEach((d, i) => { d.open = open.has(key(a, i)); }));
   const top = results.map(r => Math.max(...r.probs));
   const best = results.reduce((b, r, i) => (top[i] > top[b] ? i : b), 0);
   $('top-prob').textContent = pct(top[best]);
@@ -373,10 +376,10 @@ async function load() {
     $('loading-title').textContent = 'LOAD SYSTEM ONE';
     $('loading-detail').textContent = 'OneJev-0.8B loaded.';
     $('loading-overlay').hidden = true;
-    $('run').disabled = false;
     setPhase('READY', 'SYSTEM ONE READY');
     $('model-kind').textContent = 'READY';
     cache.refresh();
+    schedule(0); // answer the current preset immediately
   } catch (err) {
     $('loading-title').textContent = 'LOAD FAILED';
     $('loading-detail').textContent = err.message;
@@ -386,25 +389,42 @@ async function load() {
   }
 }
 
+// Auto-run: each edit bumps `edits` and debounces one pass; a pass that sees newer edits skips
+// painting (the pending timer re-runs). A timer that fires mid-pass queues exactly one more.
+// ponytail: whole preset re-runs on any edit (~150 ms/question); cache per question if presets grow.
+let timer = 0, edits = 0, running = false, queued = false;
+function schedule(delay = 200) {
+  if (!ctx) return;
+  edits++;
+  $('answers').classList.add('stale');
+  clearTimeout(timer);
+  timer = setTimeout(run, delay);
+}
+
 async function run() {
   if (!ctx) return;
-  $('run').disabled = true; cache.busy(true);
-  $('run-status').textContent = 'running…';
+  if (running) { queued = true; return; }
+  running = true; queued = false; cache.busy(true);
+  const seen = edits, status = $('run-status');
   try {
     const results = await runAll(ctx, $('state').value, ui.questions);
+    if (seen !== edits) return;
     window.__s1 = results; // exposed for browser QA: raw probs, not rounded percentages
     renderAnswers(results);
-    $('run-status').textContent = `${results.length} question${results.length === 1 ? '' : 's'} · ${results.reduce((s, r) => s + r.ms, 0).toFixed(0)} ms total`;
+    status.classList.remove('s1-error');
+    status.textContent = `${results.length} question${results.length === 1 ? '' : 's'} · ${results.reduce((s, r) => s + r.ms, 0).toFixed(0)} ms total`;
   } catch (err) {
-    $('answers').replaceChildren(el('p', { class: 's1-error', role: 'alert' }, err.message));
-    $('run-status').textContent = '';
+    if (seen !== edits) return;
+    // Mid-edit input is often invalid: keep the last good answers (dimmed) and say why.
+    status.classList.add('s1-error');
+    status.textContent = $('answers').querySelector('.s1-answer') ? `${err.message} · showing last valid answers` : err.message;
   } finally {
-    $('run').disabled = false; cache.busy(false);
+    running = false; cache.busy(false);
+    if (queued) run();
   }
 }
 
 $('load').addEventListener('click', load);
-$('run').addEventListener('click', run);
 
 // Boot: preset list, first preset in the editor, auto-load if the browser already has the weights.
 fillPresets();

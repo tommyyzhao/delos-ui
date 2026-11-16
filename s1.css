@@ -12,6 +12,7 @@
 .s1-console .controls{height:auto;flex-wrap:wrap;padding:6px 0}
 .s1-note{font-size:11px;color:var(--muted)}
 .s1-error{color:#f2a65a;font-size:12px;margin:6px 0 0}
+#answers{transition:opacity .15s}#answers.stale{opacity:.55}
 .s1-workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1.1fr);gap:14px;margin-top:14px;align-items:start}
 .s1-panel{padding:9px;min-width:0}
 .s1-panel h2{font-size:11px}

@@ -1,4 +1,4 @@
-// Qwen3.5-0.8B (text-only ONNX, q4f16) on WebGPU via the vendored Transformers.js bundle.
+// Qwen3.5-0.8B (text-only ONNX, q4f16) on WebGPU via Transformers.js 4.3.2 from jsDelivr (pinned version).
 // Weights come from Hugging Face at one pinned revision; inference is local. No KV cache: each logits(ids) is a full forward.
 import { halfToFloat32 } from './logits.js';
 
