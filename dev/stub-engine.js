@@ -10,6 +10,7 @@ export async function loadModel() {
     encode: text => (text.match(/\s*[^\s]+/g) || []).map(part => index.get(part) ?? 1 + (part.length + part.charCodeAt(1 % part.length)) % (words.length - 1)),
     decode: ids => Array.from(ids, id => words[id]).join(''),
     tokenText: id => words[id],
+    dispose: async () => {},
     async logits(ids) {
       const preferred = story[ids.length % story.length];
       const seed = ids.reduce((sum, id) => (sum * 31 + id) % 65521, 17);

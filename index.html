@@ -10,7 +10,7 @@
   <header class="topbar">
     <a class="logo" href="#code" aria-label="Delos home">DELOS</a>
     <nav aria-label="System modules"><a class="tab active" href="#code" aria-current="page">CODE</a><a class="tab" href="#host">HOSTS</a><span class="tab">SOFTWARE</span><a class="tab" href="decide.html">SYSTEM ONE</a><span class="tab">INFO</span><span class="tab">DATA</span></nav>
-    <div class="system-status"><span class="status-dot"></span><span id="system-status">LOADING HOST</span><span class="status-divider">/</span> LOCAL INFERENCE <span class="status-divider">/</span> ADMIN</div>
+    <div class="system-status"><button id="cache-clear" class="cache-btn" type="button" disabled>CACHE EMPTY</button><span class="status-divider">/</span><span class="status-dot offline"></span><span id="system-status">LOADING HOST</span><span class="status-divider">/</span> LOCAL INFERENCE <span class="status-divider">/</span> ADMIN</div>
   </header>
   <section class="overview" aria-label="Model diagnostics and processing architecture">
     <section class="host" id="host" aria-label="Model diagnostics">
@@ -40,7 +40,7 @@
   <nav class="breadcrumb" aria-label="Current process"><span>KNOWLEDGE BASE</span><i aria-hidden="true">〈- • -〉</i><span>INFERENCE ENGINE</span><i aria-hidden="true">〈- • -〉</i><span>PROCESS</span><i aria-hidden="true">〈- • -〉</i><strong>DIALOGUE TREE</strong></nav>
   <div class="live-workspace">
     <section class="tree-viewport" id="tree-viewport" aria-label="Token chain, horizontally scrollable" tabindex="0"><div class="tree" id="tree"></div></section>
-    <aside class="inspector module" aria-labelledby="inspector-title"><h2 id="inspector-title">LOGIT INSPECTOR / NEXT</h2><div class="distribution-meta" id="distribution-meta">AWAITING HOST</div><p class="inspector-help">CLICK A NODE TO INSPECT · CLICK A CHIP TO RE-BRANCH</p><div class="table-scroll"><table><thead><tr><th>#</th><th>TOKEN / PROBABILITY</th><th>LOGIT</th><th>LOGIT / T</th><th>PROB</th><th>CUM.</th></tr></thead><tbody id="logits-table"></tbody></table></div><p class="inspector-help" id="inspector-note">Probabilities cover the full vocabulary. Only top-N shown.</p></aside>
+    <aside class="inspector module" id="inspector" data-open="false" aria-labelledby="inspector-title"><h2 id="inspector-title"><button type="button" class="inspector-toggle" id="inspector-toggle" aria-expanded="false" aria-controls="inspector-body"><span>LOGIT INSPECTOR<span id="inspector-sub"> / NEXT</span></span><span class="chev" aria-hidden="true"></span></button></h2><div id="inspector-body" hidden><div class="distribution-meta" id="distribution-meta">AWAITING HOST</div><p class="inspector-help">CLICK A NODE TO INSPECT · CLICK A CHIP TO RE-BRANCH</p><div class="table-scroll"><table><thead><tr><th>#</th><th>TOKEN / PROBABILITY</th><th>LOGIT</th><th>LOGIT / T</th><th>PROB</th><th>CUM.</th></tr></thead><tbody id="logits-table"></tbody></table></div><p class="inspector-help" id="inspector-note">Probabilities cover the full vocabulary. Only top-N shown.</p></div></aside>
   </div>
   <div class="app-message" id="app-message" role="status" aria-live="polite"></div>
   <footer><span>DELOS INCORPORATED <i> / </i> HOST MANAGEMENT SYSTEM</span><span>QWEN3.5-0.8B <i> / </i> NO REMOTE INFERENCE · WEIGHTS FROM HUGGING FACE, RUNS ON YOUR GPU</span></footer>

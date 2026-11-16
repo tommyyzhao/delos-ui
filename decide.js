@@ -2,6 +2,7 @@
 import { env, AutoTokenizer, AutoModelForCausalLM, Tensor } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.2/dist/transformers.min.js';
 import { buildMessages, letterProbs, answer, confidenceDetail, toApi, parseState, prepare, LETTERS } from './s1.js';
 import { distribution, probOf, halfToFloat32 } from './logits.js';
+import { mountCache, setStatus, takeNote } from './cache.js';
 
 const MODEL = 'onnx-community/OneJev-0.8B-ONNX';
 const REVISION = 'afc03812cedf078ce660ec410fcf8597b4c4ec5d';
@@ -336,9 +337,11 @@ function inspectorBody(r, ctx) {
 let ctx = null;
 const hasWebGPU = () => typeof navigator !== 'undefined' && !!navigator.gpu;
 
+const cache = mountCache({ release: async () => { await ctx?.model.dispose(); ctx = null; } });
 function setPhase(text, status) {
   $('phase').textContent = text;
-  $('system-status').textContent = status ?? text;
+  setStatus(status ?? text, text === 'READY');
+  cache.busy(text === 'LOADING');
 }
 
 async function load() {
@@ -366,6 +369,7 @@ async function load() {
     $('run').disabled = false;
     setPhase('READY', 'SYSTEM ONE READY');
     $('model-kind').textContent = 'READY';
+    cache.refresh();
   } catch (err) {
     $('loading-title').textContent = 'LOAD FAILED';
     $('loading-detail').textContent = err.message;
@@ -377,7 +381,7 @@ async function load() {
 
 async function run() {
   if (!ctx) return;
-  $('run').disabled = true;
+  $('run').disabled = true; cache.busy(true);
   $('run-status').textContent = 'running…';
   try {
     const results = await runAll(ctx, $('state').value, ui.questions);
@@ -388,7 +392,7 @@ async function run() {
     $('answers').replaceChildren(el('p', { class: 's1-error', role: 'alert' }, err.message));
     $('run-status').textContent = '';
   } finally {
-    $('run').disabled = false;
+    $('run').disabled = false; cache.busy(false);
   }
 }
 
@@ -404,6 +408,7 @@ if (!hasWebGPU()) {
   $('load').hidden = true;
 } else {
   $('loading-overlay').hidden = false;
+  $('loading-detail').textContent = takeNote() + $('loading-detail').textContent;
   // Auto-load only when the weights are really in the Cache API (a flag can outlive an evicted cache).
-  caches.open('transformers-cache').then(c => c.match(WEIGHTS)).then(hit => { if (hit) load(); }).catch(() => {});
+  caches.has('transformers-cache').then(has => has && caches.open('transformers-cache')).then(c => c && c.match(WEIGHTS)).then(hit => { if (hit) load(); }).catch(() => {});
 }

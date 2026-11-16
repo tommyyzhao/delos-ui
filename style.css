@@ -79,3 +79,33 @@ input,select{font:inherit;color:var(--ink);background:#14232d;border:1px solid v
   .app-message{position:static;margin:10px 0;font-size:12px}footer{position:static;flex-direction:column;gap:6px;margin-top:20px;font-size:9px}
   .loading-overlay{padding:0 20px}.loading-overlay h2{font-size:18px;text-align:center}.loading-overlay progress{width:min(320px,100%)}
 }
+
+/* Cache purge button + dialog, offline status dot. */
+.system-status{gap:9px;position:relative;z-index:30}/* above the load gate so a purge stays reachable */.status-dot.offline{background:var(--muted);box-shadow:none}
+.cache-btn{border:1px solid var(--line);border-radius:3px 3px 7px 3px;background:transparent;color:var(--cyan);padding:4px 10px;font-size:9px;font-weight:700;letter-spacing:.15em;line-height:13px;transform:skewX(-10deg);white-space:nowrap}
+.cache-btn:hover:not(:disabled){background:#5fd3e820;border-color:var(--cyan)}.cache-btn:disabled{color:var(--muted);cursor:default;opacity:1}
+.cache-dialog{background:#11161cf5;color:var(--ink);border:1px solid var(--bright);border-radius:3px;padding:22px 26px;max-width:min(520px,calc(100vw - 32px));font:inherit;letter-spacing:.045em;box-shadow:0 0 40px #000a}
+.cache-dialog::backdrop{background:#11161cd9}
+.cache-dialog h2{margin:0 0 10px;font-size:20px;letter-spacing:.12em;color:var(--bright)}.cache-dialog p{font-size:14px;line-height:1.6;margin:8px 0}.cache-size{color:var(--cyan);font-weight:700;font-size:16px!important}.cache-error{color:#ffb5ac}
+.cache-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:18px}.cache-actions button{border:1px solid var(--line);background:#1b2b34;color:var(--cyan);padding:10px 22px;font-size:13px;font-weight:700;letter-spacing:.12em;border-radius:3px;min-height:44px}.cache-actions button:hover:not(:disabled){background:#294451}.cache-actions .danger{border-color:#ffb5ac;color:#ffb5ac}
+
+/* Logit inspector: a collapsed right rail by default (the tree gets the full width), full panel when open. */
+.live-workspace{grid-template-columns:minmax(0,1fr) 44px;transition:grid-template-columns .2s ease}
+.live-workspace:has(#inspector[data-open=true]){grid-template-columns:minmax(0,1fr) 516px}
+.inspector{overflow:hidden}.inspector h2{padding:0;display:flex;align-items:center}.inspector h2:before{flex:none;margin-left:5px}
+.inspector-toggle{all:unset;box-sizing:border-box;display:flex;flex:1;min-width:0;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;padding:0 5px;color:inherit;font:inherit;letter-spacing:inherit;line-height:16px;white-space:nowrap}
+.inspector-toggle:hover{color:var(--bright)}.inspector-toggle:focus-visible{outline:2px solid var(--bright);outline-offset:2px}
+.chev{width:7px;height:7px;border-top:1.5px solid currentColor;border-right:1.5px solid currentColor;flex:none}
+.inspector[data-open=true] .chev{transform:rotate(45deg)}.inspector[data-open=false] .chev{transform:rotate(-135deg)}
+.inspector[data-open=false]{padding:5px 0}.inspector[data-open=false] h2{height:100%;background:none;border:0}.inspector[data-open=false] h2:before{display:none}
+.inspector[data-open=false] .inspector-toggle{flex-direction:column-reverse;height:100%;padding:8px 0;justify-content:space-between;align-items:center;color:var(--cyan);background:#21414d;border:1px solid #365b67}
+.inspector[data-open=false] .inspector-toggle>span:first-child{writing-mode:vertical-rl;font-size:10px;font-weight:600;letter-spacing:.14em}
+.inspector[data-open=false] #inspector-sub{display:none}
+@media(prefers-reduced-motion:reduce){.live-workspace{transition:none}}
+@media(forced-colors:active){.inspector-toggle,.cache-btn{border:1px solid ButtonText}.inspector-toggle:focus-visible,.cache-btn:focus-visible,.cache-actions button:focus-visible{outline:2px solid Highlight}.status-dot{background:CanvasText}.cache-dialog{border:2px solid CanvasText;background:Canvas;color:CanvasText}}
+@media(max-width:799px){
+  .live-workspace,.live-workspace:has(#inspector[data-open=true]){display:block;transition:none}
+  .cache-btn{min-height:44px;padding:4px 8px;font-size:9px;letter-spacing:.08em;transform:none}.system-status .cache-btn+.status-divider{display:none}.system-status{row-gap:6px;gap:6px}
+  .inspector[data-open=false]{padding:0}.inspector[data-open=false] .inspector-toggle{flex-direction:row;height:44px;padding:0 12px}.inspector[data-open=false] .inspector-toggle>span:first-child{writing-mode:horizontal-tb;font-size:11px}
+  .inspector[data-open=false] .chev{transform:rotate(135deg)}.inspector[data-open=true] .chev{transform:rotate(-45deg)}.inspector[data-open=true] .inspector-toggle{min-height:44px}
+}

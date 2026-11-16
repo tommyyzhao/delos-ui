@@ -15,6 +15,7 @@ export const MODEL = { name: 'QWEN3.5-0.8B', repo: REPO, revision: REVISION, byt
 // Transformers.js stores completed downloads in this Cache API cache, keyed by request URL.
 export async function isCached() {
   try {
+    if (!(await caches.has('transformers-cache'))) return false; // caches.open would recreate an empty cache after a purge
     const cache = await caches.open('transformers-cache');
     return !!(await cache.match(WEIGHTS) && await cache.match(WEIGHTS.replace('_data', '')));
   } catch { return false; }
@@ -77,5 +78,6 @@ export async function loadModel(onProgress = () => {}) {
     vocab_size: V, layer_types: c.layer_types, sequence_len: CONTEXT, quant: 'q4f16', device: 'WebGPU',
     n_params: 752393024, // text-only safetensors total from the pinned HF revision
   };
-  return { config, encode: text => tokenizer.encode(text), decode, tokenText, logits };
+  // dispose frees the GPU sessions; the cache purge calls it first.
+  return { config, encode: text => tokenizer.encode(text), decode, tokenText, logits, dispose: () => model.dispose() };
 }

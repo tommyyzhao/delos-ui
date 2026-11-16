@@ -1,8 +1,9 @@
 import { distribution, probOf, sample, freeze } from './logits.js';
+import { mountCache, setStatus, takeNote } from './cache.js';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 let model, promptIds = [], chain = [], pending = null, selected = -1, busy = false, running = false;
-let lastMs = 0;
+let lastMs = 0, loading = false;
 const el = (tag, className, text) => {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -47,6 +48,7 @@ function controls() {
   document.querySelectorAll('#tree .chip').forEach(chip => { chip.disabled = busy; });
   $('temperature').disabled = busy;
   $('mode').disabled = busy;
+  cache.busy(busy || running || loading);
 }
 function stop() { running = false; controls(); }
 async function operate(action) {
@@ -127,7 +129,7 @@ async function run() {
 function inspector() {
   const item = selected < 0 ? { dist: pending } : chain[selected];
   const dist = item?.dist;
-  $('inspector-title').textContent = `LOGIT INSPECTOR / ${selected < 0 ? 'NEXT' : `TOKEN ${selected + 1}`}`;
+  $('inspector-sub').textContent = ` / ${selected < 0 ? 'NEXT' : `TOKEN ${selected + 1}`}`;
   $('logits-table').replaceChildren();
   if (!dist) { $('distribution-meta').textContent = model && ids().length >= model.config.sequence_len ? `CONTEXT CEILING / ${model.config.sequence_len} TOKENS` : 'FORWARD PASS PENDING'; return; }
   $('distribution-meta').textContent = `ENTROPY ${dist.entropy.toFixed(3)} bits   MAX LOGIT ${dist.max.toFixed(3)}   T ${dist.temp.toFixed(1)}`;
@@ -196,7 +198,7 @@ function render(scroll = false) {
     const column = el('div', `word-column${item.preview ? ' preview-column' : ''}`); column.style.left = `${x}px`; column.style.top = `${y}px`;
     const node = el('article', `node${selected === index || item.preview && selected < 0 ? ' selected' : ''}`); node.tabIndex = 0; node.setAttribute('role', 'button'); node.dataset.focus = `node-${index}`;
     node.append(el('span', 'node-label', item.preview ? 'NEXT / PREVIEW' : 'FORWARD CHAIN'), el('h2', '', item.preview ? '?' : token(item.id)));
-    const select = () => { selected = item.preview ? -1 : index; render(); };
+    const select = () => { selected = item.preview ? -1 : index; if (!item.preview) setInspector(true, false); render(); };
     node.addEventListener('click', select); node.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); select(); } });
     column.append(node, el('span', 'column-caption', item.preview ? 'PENDING DISTRIBUTION' : `TOKEN ${index + 1} / ID ${item.id}`));
     item.dist.top.slice(0, topN()).forEach(({ id, prob }) => {
@@ -232,7 +234,7 @@ function config() {
   $('layers').replaceChildren();
   c.layer_types.forEach((type, i) => { const row = el('li'); row.append(el('span', 'checkmark', '✓'), el('span', 'binary', `L${i}`), document.createTextNode(` ${KIND[type] ?? type.toUpperCase()} + MLP`)); $('layers').append(row); });
   $('model-kind').textContent = stub ? 'DEV STUB' : 'LIVE LLM';
-  $('system-status').textContent = stub ? 'STUB / SYNTHETIC LOGITS' : 'HOST ONLINE';
+  setStatus(stub ? 'STUB / SYNTHETIC LOGITS' : 'HOST ONLINE', true);
 }
 $('step').addEventListener('click', () => { stop(); step(); });
 $('run').addEventListener('click', run);
@@ -250,12 +252,25 @@ document.addEventListener('keydown', event => {
   if (event.key === 'ArrowLeft') { event.preventDefault(); back(); }
 });
 
+const cache = mountCache({ release: async () => { running = false; await model?.dispose?.(); model = null; } });
+// Inspector rail: collapsed by default; the user's own toggle persists, a node click opens it for this visit only.
+function setInspector(open, remember = true) {
+  $('inspector').dataset.open = open; $('inspector-toggle').setAttribute('aria-expanded', open); $('inspector-body').hidden = !open;
+  if (remember) try { localStorage.setItem('delos-inspector-open', open); } catch {}
+  $('tree-viewport').scrollLeft = $('tree').scrollWidth;
+}
+$('inspector-toggle').addEventListener('click', () => setInspector($('inspector').dataset.open !== 'true'));
+// Re-pin the newest tree column whenever the viewport resizes: the inspector transition, a window resize or a reflow breakpoint.
+new ResizeObserver(() => { $('tree-viewport').scrollLeft = $('tree').scrollWidth; }).observe($('tree-viewport'));
+try { setInspector(localStorage.getItem('delos-inspector-open') === 'true', false); } catch {}
+
 const fail = (title, detail) => {
   $('loading-overlay').hidden = false; $('loading-overlay').classList.add('error'); $('loading-title').textContent = title;
   $('loading-progress').hidden = true; $('load-host').hidden = true; $('loading-detail').textContent = detail;
-  $('system-status').textContent = 'HOST OFFLINE';
+  setStatus('HOST OFFLINE');
 };
 async function load(engine) {
+  loading = true; cache.busy(true);
   $('load-host').hidden = true; $('loading-overlay').classList.remove('error');
   $('loading-title').textContent = 'LOADING HOST…';
   const bar = $('loading-progress'); bar.hidden = false; bar.removeAttribute('value');
@@ -274,6 +289,8 @@ async function load(engine) {
   document.body.dataset.ready = 'true';
   $('step').focus({ preventScroll: true });
 }
+const loaded = async engine => { try { await load(engine); } finally { loading = false; cache.busy(false); cache.refresh(); } };
+const note = takeNote();
 try {
   if (location.protocol === 'file:') throw new Error('Browser modules need HTTP. Serve with `python3 -m http.server` then open http://localhost:8000/');
   const stub = params.has('stub');
@@ -281,14 +298,14 @@ try {
   if (!stub && !navigator.gpu) fail('WEBGPU REQUIRED', 'This host runs a 0.8B-parameter model on your GPU. WebGPU is required (Chrome/Edge 113+, Safari 26+). There is no WASM fallback at this size.');
   else {
     const cached = stub || await engine.isCached(), mb = Math.round(engine.MODEL.bytes / 1e6);
-    if (cached) await load(engine);
+    if (cached) await loaded(engine);
     else {
       $('loading-title').textContent = `${engine.MODEL.name} / HOST`;
       $('loading-progress').hidden = true;
-      $('loading-detail').textContent = `${mb} MB · cached by your browser after first load.\nWeights download from Hugging Face; inference then runs locally on your GPU. Nothing you type leaves this page.`;
-      $('system-status').textContent = 'HOST OFFLINE';
+      $('loading-detail').textContent = note + `${mb} MB · cached by your browser after first load.\nWeights download from Hugging Face; inference then runs locally on your GPU. Nothing you type leaves this page.`;
+      setStatus('HOST OFFLINE');
       const button = $('load-host'); button.hidden = false; button.focus({ preventScroll: true });
-      button.addEventListener('click', () => load(engine).catch(error => { fail('HOST LOAD FAILED', `${error.message}\nReload to retry.`); console.error(error); }), { once: true });
+      button.addEventListener('click', () => loaded(engine).catch(error => { fail('HOST LOAD FAILED', `${error.message}\nReload to retry.`); console.error(error); }), { once: true });
     }
   }
 } catch (error) {
