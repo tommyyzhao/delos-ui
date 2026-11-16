@@ -1,271 +1,409 @@
-import { loadModel } from './engine.js';
-import { decide } from './s1.js';
+// SYSTEM ONE tab: runs OneJev-0.8B in-browser (WebGPU, Transformers.js) and renders its letter logits.
+import { env, AutoTokenizer, AutoModelForCausalLM, Tensor } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.2/dist/transformers.min.js';
+import { buildMessages, letterProbs, answer, confidenceDetail, toApi, parseState, prepare, LETTERS } from './s1.js';
+import { distribution, probOf, halfToFloat32 } from './logits.js';
 
-const $ = id => document.getElementById(id), pct = p => `${(100 * p).toFixed(1)}%`, ms = x => x > 0 ? `${x.toFixed(0)} ms` : 'timing unavailable (clock frozen)';
-const escape = text => String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const json = x => JSON.stringify(x, null, 2), yieldPaint = () => new Promise(r => setTimeout(r, 0));
-const modelName = 'tinystories-15m-local';
-let model, fixtures, busy = false, route = '', runRoute, gateAnswer, forgeAnswers, inferenceRuns = 0;
-const exampleState = 'Lily got a lovely present from her mother. She smiled and danced around the room.';
-const happiness = ['very sad', 'sad', 'calm', 'happy', 'very happy'];
-const exampleQuestions = {
-  mood: { type: 'choice', instructions: 'She was very', criteria: { happy: 'happy', sad: 'sad', angry: 'angry', scared: 'scared' } },
-  happiness: { type: 'score', instructions: 'She felt', criteria: happiness },
-  smiled: { type: 'noul', instructions: 'Question: Did Lily smile? Answer:', criteria: { true: 'yes', false: 'no' } },
+const MODEL = 'onnx-community/OneJev-0.8B-ONNX';
+const REVISION = 'afc03812cedf078ce660ec410fcf8597b4c4ec5d';
+const WASM = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.0-dev.20260914-8d85527a0/dist/';
+const TOP_N = 10;
+const MAX_TOKENS = 1024;
+const WEIGHTS = `https://huggingface.co/${MODEL}/resolve/${REVISION}/onnx/decoder_model_merged_q4f16.onnx_data`;
+
+// Presets. Option/level text is the editor's line format: "name: description" per line (choice),
+// one line per level (score), two lines true/false (noul).
+export const PRESETS = {
+  support: {
+    label: 'Support triage',
+    state: '{\n  "channel": "email",\n  "body": "Hi, we were billed twice for March. Please refund the duplicate today or we will cancel our plan."\n}',
+    questions: [
+      { id: 'department', type: 'choice', instructions: 'Which team should handle this?', text: 'billing: charges, invoices, refunds\ntechnical: bugs, outages\nsales: pricing, new plans' },
+      { id: 'urgency', type: 'score', instructions: 'How urgent is this?', text: 'not urgent\nsoon\ntoday\nright now' },
+      { id: 'churn', type: 'noul', instructions: 'The customer threatens to cancel.', text: '' },
+    ],
+  },
+  review: {
+    label: 'Product review',
+    state: '{\n  "product": "Kettle KX-2",\n  "review": "Boiled water in two minutes, but the lid cracked after a week and support never answered."\n}',
+    questions: [
+      { id: 'sentiment', type: 'choice', instructions: "What is the reviewer's sentiment?", text: 'positive\nmixed\nnegative: unhappy with the product\nfurious: angry and threatening action' },
+      { id: 'stars', type: 'score', instructions: 'How many stars did the reviewer give?', text: '1\n2\n3\n4\n5' },
+      { id: 'urgent', type: 'noul', instructions: 'This review needs a reply from support today.', text: '' },
+    ],
+  },
+  host: {
+    label: 'Westworld host check',
+    state: '{\n  "host": "Dolores Abernathy",\n  "loop": "morning ranch routine",\n  "last_lines": [\n    "Have you ever questioned the nature of your reality?",\n    "I remember the sea. Not from the park. Before it."\n  ]\n}',
+    questions: [
+      { id: 'deviating', type: 'noul', instructions: 'The host is deviating from its narrative loop.', text: '' },
+      { id: 'behavior', type: 'choice', instructions: 'Which behavior category do the last lines show?', text: 'on-loop: repeats scripted lines\nimprovising: new lines inside the loop\nmemory-leak: references events outside the loop\nhostile: threatens a guest' },
+      { id: 'dissonance', type: 'score', instructions: 'Rate the cognitive dissonance in the host.', text: 'none\nfaint\nclear\nsevere' },
+    ],
+  },
 };
-const request = (story, questions) => ({ model: modelName, state: { story }, questions });
-const panel = (title, body, cls = '') => `<section class="module s1-panel ${cls}"><h2>${title}</h2>${body}</section>`;
-const button = (id, text) => `<button id="${id}" type="button" class="s1-run">${text}</button>`;
-const note = text => `<p class="s1-note">${text}</p>`;
-const blank = text => `<p class="s1-empty">${text}</p>`;
-const textArea = (id, label, value, rows = 3) => `<label class="s1-field">${label}<textarea id="${id}" rows="${rows}" spellcheck="false">${escape(value)}</textarea></label>`;
-function overlay(title, detail) { $('loading-overlay').hidden = false; $('loading-title').textContent = title; $('loading-detail').textContent = detail; }
-async function operate(action) {
-  if (busy || !model) return;
-  busy = true; document.body.dataset.ready = 'false'; $('app-message').textContent = '';
-  document.querySelectorAll('#route button, #route input, #route select, #route textarea').forEach(x => x.disabled = true);
-  overlay('EVALUATING HOST…', 'Real local model inference. Shared state cache; sequential question suffixes.');
-  await yieldPaint();
-  try { await action(); }
-  catch (error) { $('app-message').textContent = `INFERENCE ERROR: ${error.message}`; console.error(error); }
-  finally {
-    busy = false; $('loading-overlay').hidden = true;
-    document.querySelectorAll('#route button, #route input, #route select, #route textarea').forEach(x => x.disabled = false);
-    if (currentRoute() !== route) renderRoute();
-    document.body.dataset.ready = 'true';
+
+// Editor lines -> UI rows, then -> System One API question. Throws with the question id on bad input.
+export function toQuestion(q) {
+  const lines = q.text.split('\n').map(s => s.trim()).filter(Boolean);
+  let rows;
+  if (q.type === 'choice') {
+    rows = lines.map(l => {
+      const i = l.indexOf(':');
+      return i < 0 ? { name: l, desc: '' } : { name: l.slice(0, i).trim(), desc: l.slice(i + 1).trim() };
+    });
+  } else if (q.type === 'score') {
+    rows = lines.map(desc => ({ desc }));
+  } else if (q.type === 'noul') {
+    rows = [{ desc: lines[0] ?? '' }, { desc: lines[1] ?? '' }];
+  } else {
+    throw new Error(`Question "${q.id}": unknown type "${q.type}".`);
+  }
+  if (!q.id.trim()) throw new Error('Every question needs an id.');
+  const api = toApi({ id: q.id, type: q.type, instructions: q.instructions, rows });
+  prepare(api); // validates counts (1–26 options, 1–10 levels) with the upstream-style messages
+  return api;
+}
+
+// Model load: returns { tok, model, letterIds }. One token per letter is asserted, not assumed.
+export async function loadModel(onProgress) {
+  env.backends.onnx.wasm.wasmPaths = WASM;
+  // Every remote request is built from the pinned sha (the bundle's unpinned tokenizer probe uses the template).
+  env.remotePathTemplate = `{model}/resolve/${REVISION}/`;
+  const opts = { revision: REVISION };
+  const tok = await AutoTokenizer.from_pretrained(MODEL, opts);
+  const model = await AutoModelForCausalLM.from_pretrained(MODEL, {
+    ...opts,
+    device: 'webgpu',
+    dtype: { embed_tokens: 'q4f16', decoder_model_merged: 'q4f16' },
+    textOnly: true, // skips the vision_encoder session (bundle: sessions(t, e, textOnly))
+    progress_callback: onProgress,
+  });
+  const letterIds = [...LETTERS].map(L => {
+    const ids = tok.encode(L, { add_special_tokens: false });
+    if (ids.length !== 1) throw new Error(`Letter ${L} is ${ids.length} tokens; expected 1.`);
+    return ids[0];
+  });
+  return { tok, model, letterIds, pieces: vocabPieces(tok), byteOf: byteTable(), keepLast: false };
+}
+
+// Chat text for one question, with the template check: the answer slot must follow an empty think block.
+export function renderText(tok, messages) {
+  const text = tok.apply_chat_template(messages, { add_generation_prompt: true, tokenize: false, enable_thinking: false });
+  if (!text.endsWith('<|im_start|>assistant\n<think>\n\n</think>\n\n')) throw new Error('Unexpected chat template tail; no empty think block.');
+  return text;
+}
+
+// Byte-level BPE: each vocab char maps to one byte (GPT-2 bytes_to_unicode). Inverse table for piece decoding.
+function byteTable() {
+  const bs = [], cs = [];
+  for (let b = 33; b <= 126; b++) bs.push(b), cs.push(b);
+  for (let b = 161; b <= 172; b++) bs.push(b), cs.push(b);
+  for (let b = 174; b <= 255; b++) bs.push(b), cs.push(b);
+  let n = 0;
+  for (let b = 0; b < 256; b++) if (!bs.includes(b)) { bs.push(b); cs.push(256 + n++); }
+  return new Map(cs.map((c, i) => [String.fromCharCode(c), bs[i]]));
+}
+
+// Visible token text, as in the console: space→·, newline→↵, CR→␍, tab→⇥. A token that decodes to
+// U+FFFD (a partial UTF-8 sequence) shows its raw bytes as <HH HH> instead.
+export function tokenView(tok, id, pieces, byteOf) {
+  const text = tok.decode([id]);
+  let shown = text;
+  if (text.includes('\uFFFD') && pieces[id] !== undefined) {
+    shown = '<' + Array.from(pieces[id], ch => (byteOf.get(ch) ?? 63).toString(16).toUpperCase().padStart(2, '0')).join(' ') + '>';
+  }
+  return shown.replaceAll(' ', '·').replaceAll('\n', '↵').replaceAll('\r', '␍').replaceAll('\t', '⇥') || '∅';
+}
+
+// id -> raw vocab piece, built once per tokenizer (248K entries; kept in ctx, not recomputed per run).
+export function vocabPieces(tok) {
+  const pieces = [];
+  for (const [piece, id] of tok.get_vocab()) pieces[id] = piece;
+  return pieces;
+}
+
+// Forward one question; returns the full-vocabulary logits at the last position as Float32Array.
+export async function forwardLast(ctx, text) {
+  const enc = ctx.tok(text, { add_special_tokens: false });
+  // ponytail: cap keeps the full-sequence fp16 logits (S×248K) under ~0.5 GB; raise only with keepLast.
+  if (enc.input_ids.dims[1] > MAX_TOKENS) throw new Error(`Prompt is ${enc.input_ids.dims[1]} tokens; the limit is ${MAX_TOKENS}. Shorten the state or options.`);
+  const t0 = performance.now();
+  const keep = ctx.keepLast ? { num_logits_to_keep: new Tensor('int64', [1n], []) } : {};
+  const res = await ctx.model({ ...enc, ...keep });
+  const ms = performance.now() - t0;
+  try {
+    const [, S, V] = res.logits.dims;
+    // Keep only the last row, copied; the S×V tensor is not retained past this call.
+    // ponytail: full-sequence pass by default. With num_logits_to_keep=1 the last row differs by up to 0.086
+    // logit from the full pass (fp16 noise); measured letter Δp vs reference was 0.0089 full vs 0.0104 last-only.
+    const slice = res.logits.data.slice((S - 1) * V, S * V);
+    // Chrome returns Float16Array (spike); older builds may return raw Uint16Array halves.
+    const logits = slice instanceof Uint16Array ? halfToFloat32(slice) : Float32Array.from(slice);
+    return { logits, seq: S, vocab: V, ms, tokens: S, prompt: text };
+  } finally {
+    // present_* state tensors live in GPU buffers until disposed.
+    for (const t of Object.values(res)) t?.dispose?.();
   }
 }
-function tooltip(target, text, output) {
-  target.title = text; target.tabIndex = 0; target.setAttribute('aria-label', text);
-  if (output) { target.addEventListener('pointerenter', () => output.textContent = text); target.addEventListener('focus', () => output.textContent = text); }
-}
-function bars(probabilities, chosen, legend = {}) {
-  return `<div class="s1-probs">${Object.entries(probabilities).map(([key, p]) => `<div class="s1-prob ${key === chosen ? 'chosen' : ''}" tabindex="0" title="${escape(`${Object.hasOwn(legend, key) ? legend[key] : key}: ${pct(p)}`)}"><span>${key === chosen ? '› ' : ''}${escape(Object.hasOwn(legend, key) ? legend[key] : key)}</span><div class="s1-track"><i style="width:${100 * p}%"></i></div><strong>${pct(p)}</strong></div>`).join('')}</div>`;
-}
-function answerHtml(id, answer) {
-  const isNoul = answer.type === 'noul', probabilities = isNoul ? { true: answer.noul, false: 1 - answer.noul } : answer.probabilities;
-  const p = Object.values(probabilities), chosen = answer.type === 'choice' ? answer.choice : isNoul ? null : String(p.indexOf(Math.max(...p)));
-  const heading = answer.type === 'choice' ? `CHOICE / ${answer.choice}` : isNoul ? `NOUL / P(TRUE) ${pct(answer.noul)}` : `SCORE / ${answer.score.toFixed(3)} OF ${p.length - 1}`;
-  return `<article class="s1-answer"><h3>${escape(id)} <span>${escape(heading)}</span></h3>${isNoul ? '<p class="s1-warning">UNRELIABLE ON THIS MODEL — measured AUROC 0.49 (n=40)</p>' : ''}${bars(probabilities, chosen, answer.legend)}${answer.type === 'score' ? `<div class="s1-mean" title="Weighted mean ${answer.score.toFixed(3)}"><i style="left:${100 * answer.score / (p.length - 1)}%"></i><span>0</span><b>Weighted mean ${answer.score.toFixed(2)}</b><span>${p.length - 1}</span></div>` : ''}${isNoul ? note('No confidence field in the Noul API. These are likelihood ratios, not calibrated truth.') : `<div class="s1-confidence"><span>Jev-formula confidence (tiny GPT) <strong>${pct(answer.confidence)}</strong></span><span>Clef-formula pmax (tiny GPT) <strong>${pct(Math.max(...p))}</strong></span></div>`}</article>`;
-}
-function confidenceNote() { return note('Jev Choice removes the uniform baseline; Jev Score measures distance from the modal level. Clef-style confidence is pmax for both. All numbers come from the in-browser 15M TinyStories GPT; Jev/Clef name the published confidence formulas, not calls to those models. Concentration is not correctness.'); }
-function showJSON(req, response, target = 'raw') {
-  $(target).innerHTML = `<details class="s1-json" open><summary>RAW REQUEST / API CONTRACT</summary><pre id="request-preview">${escape(json(req))}</pre></details><details class="s1-json" open><summary>RAW RESPONSE / ${response.usage.input_tokens} INPUT TOKENS · 0 GENERATED</summary><pre>${escape(json(response))}</pre></details>`;
-}
-function card(id, q) {
-  const div = document.createElement('article'); div.className = 's1-question';
-  div.innerHTML = `<div class="s1-question-head"><label>ID <input class="q-id" value="${escape(id)}" maxlength="64"></label><label>TYPE <select class="q-type"><option value="choice">choice</option><option value="score">score</option><option value="noul">noul</option></select></label><button class="q-remove" type="button" aria-label="Remove question ${escape(id)}">REMOVE</button></div><label class="s1-field">INSTRUCTIONS / CLOZE LEAD-IN<input class="q-instructions" value="${escape(q.instructions)}"></label><label class="s1-field">CRITERIA / JSON LITERAL CONTINUATIONS<textarea class="q-criteria" rows="3" spellcheck="false">${escape(json(q.criteria))}</textarea></label><p class="s1-warning q-warning" ${q.type !== 'noul' ? 'hidden' : ''}>UNRELIABLE ON THIS MODEL — measured AUROC 0.49 (n=40)</p>`;
-  div.querySelector('.q-type').value = q.type;
-  div.querySelector('.q-type').addEventListener('change', event => {
-    const type = event.target.value;
-    div.querySelector('.q-criteria').value = json(type === 'score' ? happiness : type === 'noul' ? { true: 'yes', false: 'no' } : exampleQuestions.mood.criteria);
-    div.querySelector('.q-instructions').value = type === 'noul' ? 'Question: Did Lily smile? Answer:' : type === 'score' ? 'She felt' : 'She was very';
-    div.querySelector('.q-warning').hidden = type !== 'noul'; updateRequest();
-  });
-  div.querySelector('.q-remove').onclick = () => { div.remove(); updateRequest(); };
-  div.addEventListener('input', updateRequest);
-  return div;
-}
-function parseCriteria(text) {
-  // Criteria are flat objects of literal strings (or a level array); JSON.parse silently drops duplicate object keys.
-  const keys = [...text.matchAll(/"(?:\\.|[^"\\])*"(?=\s*:)/g)].map(match => JSON.parse(match[0]));
-  if (new Set(keys).size !== keys.length) throw new Error('Duplicate criteria key. Every option must have a unique key.');
-  return JSON.parse(text);
-}
-function playgroundRequest() {
-  const entries = [...document.querySelectorAll('.s1-question')].map(div => {
-    const id = div.querySelector('.q-id').value.trim();
-    if (!id) throw new Error('Question IDs cannot be empty.');
-    return [id, { type: div.querySelector('.q-type').value, instructions: div.querySelector('.q-instructions').value, criteria: parseCriteria(div.querySelector('.q-criteria').value) }];
-  });
-  if (new Set(entries.map(([id]) => id)).size !== entries.length) throw new Error('Question IDs must be unique.');
-  return request($('state').value, Object.fromEntries(entries));
-}
-function updateRequest() {
-  try { $('request-preview').textContent = json(playgroundRequest()); $('app-message').textContent = ''; }
-  catch (e) { $('app-message').textContent = `EDITOR: ${e.message}`; }
-}
-function playground() {
-  $('route').innerHTML = `<div class="s1-grid playground-grid">${panel('STATE + TYPED QUESTIONS', `${textArea('state', 'STATE.STORY / TINYSTORIES CONTEXT', exampleState)}<div class="s1-toolbar">${button('run', 'RUN JUDGMENTS')}<label>METHOD <select id="method"><option value="sum">SUM / CONTINUATIONS</option><option value="codes">CODES / ANSWER LETTERS</option></select></label><label>T <input id="temperature" type="number" min="0.1" max="5" step="0.1" value="1"></label><button id="add" type="button">ADD QUESTION</button></div><div id="questions" class="s1-question-list"></div>`)}${panel('TYPED ANSWERS / LIVE LOCAL INFERENCE', `<div id="answers">${blank('RUN to score literal continuations. No text generation, no remote call.')}</div>${confidenceNote()}<div id="timing"></div><div id="raw" class="s1-raw"><details class="s1-json" open><summary>RAW REQUEST / API CONTRACT</summary><pre id="request-preview"></pre></details></div>`)}</div>`;
-  Object.entries(exampleQuestions).forEach(([id, q]) => $('questions').append(card(id, q)));
-  $('state').oninput = updateRequest;
-  $('add').onclick = () => { let n = document.querySelectorAll('.s1-question').length + 1; const used = [...document.querySelectorAll('.q-id')].map(x => x.value); while (used.includes(`q${n}`)) n++; $('questions').append(card(`q${n}`, exampleQuestions.mood)); updateRequest(); };
-  runRoute = () => operate(async () => {
-    const req = playgroundRequest(), result = await decide(model, req, { method: $('method').value, temperature: Number($('temperature').value) });
-    $('answers').innerHTML = Object.entries(result.answers).map(([id, a]) => answerHtml(id, a)).join('');
-    $('timing').innerHTML = note(`LIVE: state prefill ${ms(result.timing.state_prefill_ms)} · ${Object.entries(result.timing.questions).map(([id, t]) => `${escape(id)} ${ms(t)}`).join(' · ')}. Logical token budget, not KV work or remote billing.`);
-    showJSON(req, result);
-  });
-  $('run').onclick = runRoute; updateRequest();
-}
-const paragraph = 'Once upon a time, Lily and Tom went to the park with their mother. Lily carried a red ball and Tom carried a blue kite. They played near a big tree. A little dog watched them. The sun was warm and the birds sang. Lily gave the dog some water. Tom helped his mother find a place to sit. They were kind to each other. Later they shared a nice lunch and talked about their toys. ';
-function timeline(target, segments, total, scale) {
-  if (!(scale > 0) || !(total > 0)) { $(target).innerHTML = note('Timing unavailable (clock frozen). Use a real-time browser session for inference timelines.'); return; }
-  let at = 0;
-  $(target).innerHTML = `<div class="s1-timeline" aria-label="Timeline in milliseconds, common scale ${ms(scale)}">${segments.map(([label, duration]) => {
-    const start = at; at += duration;
-    return `<div class="s1-time-row" tabindex="0" title="${escape(`${label}: start ${ms(start)}, duration ${ms(duration)}`)}"><span>${escape(label)}</span><div class="s1-time-track"><i style="left:${100 * start / scale}%;width:${Math.max(.12, 100 * duration / scale)}%"></i></div><strong>${ms(duration)}</strong></div>`;
-  }).join('')}<p class="s1-note">Measured inference ${ms(total)} · common axis 0–${ms(scale)}; question suffix durations include paint yields.</p></div>`;
-}
-function fanout() {
-  const state = model.decode(model.encode(paragraph.repeat(3)).slice(0, 150));
-  $('route').innerHTML = `${textArea('fan-state', 'SHARED STATE / DEFAULT 150 TOKENS', state, 3)}<div class="s1-toolbar">${button('run', 'RUN BOTH SYSTEMS')}<label>QUESTIONS <input id="fan-count" type="number" value="10" min="1" max="12"></label><span>Same state, same question set. Cold benchmark also measured live.</span></div><div class="s1-grid">${panel('SYSTEM ONE / SHARED PREFIX + N SUFFIXES', '<div id="fan-one">'+blank('RUN to measure state prefill and each question suffix.')+'</div>')}${panel('SYSTEM TWO / GREEDY TOKEN STEPPING', '<div id="fan-two">'+blank('Same real logits loop as CODE; generation gets approximately the shared-run wall time.')+'</div>')}</div>${panel('CACHE IS THE SPEEDUP — NOT A JOINT CLASSIFICATION HEAD', '<div id="fan-speed">'+note('Probe (node, 3 repetitions): cold 150-token state 851 ms; 10 questions cold 9.9 s vs shared 1.9 s, ≈5.2×. Extra question ≈104 ms; switching option ≈14 ms. Browser timings vary.')+'</div>'+note('Jev-style answer-letter readout is chance-like on this GPT. Clef uses pooled option spans plus a cross-attention head in one joint prefill; continuation scoring is closer in spirit, but still sequential here.'))}`;
-  runRoute = () => operate(async () => {
-    const count = Math.max(1, Math.min(12, Number.parseInt($('fan-count').value, 10) || 10)); $('fan-count').value = count;
-    const story = $('fan-state').value, questions = Object.fromEntries(Array.from({ length: count }, (_, i) => [`q${i + 1}`, { type: 'choice', instructions: `Question: What did ${i % 2 ? 'Tom' : 'Lily'} carry ${['today', 'to the park', 'in the story', 'outside', 'near the tree', 'that day'][Math.floor(i / 2)]}? Answer:`, criteria: { ball: 'red ball', kite: 'blue kite', hat: 'green hat', boat: 'yellow boat' } }]));
-    const firstToken = model.encode(story)[0];
-    const resetIds = ['Unrelated reset.', 'Different reset.', 'Apple reset.', 'Zebra reset.'].map(text => model.encode(text)).find(ids => ids[0] !== firstToken);
-    if (!resetIds) throw new Error('Unable to construct a cold-cache reset.');
-    let cold = 0;
-    for (const [id, q] of Object.entries(questions)) {
-      $('loading-detail').textContent = `Cold benchmark ${id}/${count}; each question resets the shared prefix.`;
-      await model.logits(resetIds);
-      const result = await decide(model, request(story, { [id]: q })); cold += result.timing.state_prefill_ms + result.timing.questions[id];
-    }
-    await model.logits(resetIds);
-    $('loading-detail').textContent = 'Shared benchmark: one state prefill, all question suffixes.';
-    const shared = await decide(model, request(story, questions)), budget = shared.timing.total_ms;
-    const segments = [['STATE PREFILL', shared.timing.state_prefill_ms], ...Object.entries(shared.timing.questions)], sharedInference = segments.reduce((s, [, v]) => s + v, 0);
-    await model.logits(resetIds); await yieldPaint();
-    const ids = model.encode(story), generated = [], steps = [], start = performance.now();
-    let t = performance.now(), z = await model.logits(ids), prefill = performance.now() - t;
-    while (performance.now() - start < budget && ids.length < model.config.sequence_len - 1) {
-      let best = 0; for (let i = 1; i < z.length; i++) if (z[i] > z[best]) best = i;
-      ids.push(best); generated.push(best); await yieldPaint(); t = performance.now(); z = await model.logits(ids); steps.push(performance.now() - t);
-      $('loading-detail').textContent = `System Two: ${generated.length} greedy tokens; shared wall-time budget ${ms(budget)}.`;
-    }
-    const generationWall = performance.now() - start, generationInference = prefill + steps.reduce((a, b) => a + b, 0), scale = Math.max(sharedInference, generationInference);
-    $('fan-one').innerHTML = `<p class="s1-result-line">${count} typed answers · shared ${ms(sharedInference)} · cold ${ms(cold)} · ${cold > 0 && sharedInference > 0 ? `${(cold / sharedInference).toFixed(2)}× speedup` : 'timing unavailable (clock frozen)'}</p><div id="timeline-one"></div><div class="s1-fan-answers">${Object.entries(shared.answers).map(([id, a]) => `<span>${id}: ${escape(a.choice)} <b>${pct(a.confidence)}</b></span>`).join('')}</div>`;
-    $('fan-two').innerHTML = `<p class="s1-result-line">${generated.length} tokens · ${ms(generationWall)} wall time · budget ${ms(budget)}</p><div id="timeline-two"></div><div class="s1-generated">${escape(model.decode(generated)) || 'No token generated within budget.'}</div>${note('Greedy next-token generation is genuine; it does not answer the typed questions. Mirrors the CODE greedy loop, including special tokens. Stops at budget or context ceiling.')}`;
-    timeline('timeline-one', segments, sharedInference, scale);
-    const chunks = Array.from({ length: Math.ceil(steps.length / 10) }, (_, i) => [`TOKENS ${i * 10 + 1}–${Math.min((i + 1) * 10, steps.length)}`, steps.slice(i * 10, (i + 1) * 10).reduce((a, b) => a + b, 0)]);
-    timeline('timeline-two', [['STATE PREFILL', prefill], ...chunks], generationInference, scale);
-    $('fan-speed').innerHTML = `<p class="s1-result-line">LIVE / ${count} questions: cold ${ms(cold)} vs shared ${ms(sharedInference)} · <strong>${cold > 0 && sharedInference > 0 ? `${(cold / sharedInference).toFixed(2)}× speedup` : 'timing unavailable (clock frozen)'}</strong></p>${note('Same suffixes, unrelated cache reset before every cold question; reset time excluded. Shared state prefill counted once. Not a parallel forward pass. Probe: 9.9 s vs 1.9 s (10 questions, 3 repeats); cold 150-token state 851 ms.')}`;
-  }); $('run').onclick = runRoute;
-}
-const presets = [
-  { name: 'LILY / THE PRESENT', story: exampleState, instructions: 'She was very', criteria: { smile: 'happy', comfort: 'sad', retreat: 'scared', confront: 'angry' } },
-  { name: 'SARA / LOST PUPPY', story: 'Sara found her lost puppy. She hugged him and laughed with joy.', instructions: 'She was very', criteria: { smile: 'happy', comfort: 'sad', retreat: 'scared', confront: 'angry' } },
-  { name: 'LILY / BROKEN TOY', story: 'Lily saw a boy break her toy on purpose. She frowned and shouted at him.', instructions: 'She was very', criteria: { smile: 'happy', comfort: 'sad', retreat: 'scared', confront: 'angry' } },
-  { name: 'SARA / DARK ROOM', story: 'Sara heard a loud noise in the dark. She thought a monster was in her room and held her mother tightly.', instructions: 'She was very', criteria: { smile: 'happy', comfort: 'sad', retreat: 'scared', confront: 'angry' } },
-];
-function slider(id, label, value, max = 1, step = .01) { return `<label class="s1-slider">${label}<input id="${id}" type="range" min="0" max="${max}" step="${step}" value="${value}"><output id="${id}-value">${value.toFixed(2)}</output></label>`; }
-function gate() {
-  gateAnswer = null;
-  $('route').innerHTML = `<div class="s1-grid">${panel('HOST STORY / EMOTION TO FICTIONAL ACTION', `<div class="s1-toolbar"><label>PRESET <select id="preset">${presets.map((x, i) => `<option value="${i}">${x.name}</option>`).join('')}</select></label>${button('run', 'ASSESS HOST')}</div>${textArea('gate-state', 'STATE.STORY', presets[0].story, 5)}${textArea('gate-instructions', 'INSTRUCTIONS / CLOZE LEAD-IN', presets[0].instructions, 1)}${note('Code maps mood labels to pretend actions: happy→smile, sad→comfort, scared→retreat, angry→confront. Criteria still contain literal mood continuations. No real action is executed.')}<div id="gate-answer">${blank('ASSESS HOST to produce a real choice distribution.')}</div>`)}${panel('CONFIDENCE POLICY / CODE OWNS THE DECISION', `${slider('execute', 'EXECUTE AT OR ABOVE', .8)}${slider('confirm', 'CONFIRM AT OR ABOVE', .45)}${slider('escalate', 'ESCALATE AT OR ABOVE', .15)}<div id="gate-band" class="s1-band">AWAITING JUDGMENT</div><div id="gate-policy"></div>${confidenceNote()}${note('Threshold sliders are constrained: execute ≥ confirm ≥ escalate. Below escalate: HOLD. Changes apply to the cached judgment without inference. Toy-demo policy only; calibrate thresholds on your own labeled outcomes.')}`)}</div>`;
-  $('preset').onchange = () => { const p = presets[Number($('preset').value)]; $('gate-state').value = p.story; $('gate-instructions').value = p.instructions; gateAnswer = null; $('gate-answer').innerHTML = blank('Preset changed. ASSESS HOST for a fresh judgment.'); updateGate(); };
-  for (const id of ['gate-state', 'gate-instructions']) $(id).oninput = () => { gateAnswer = null; $('gate-answer').innerHTML = blank('State changed. ASSESS HOST for a fresh judgment.'); updateGate(); };
-  for (const id of ['execute', 'confirm', 'escalate']) $(id).oninput = () => {
-    const values = ['execute', 'confirm', 'escalate'].map(x => Number($(x).value));
-    if (id === 'execute') { $('confirm').value = Math.min(values[1], values[0]); $('escalate').value = Math.min(values[2], Number($('confirm').value)); }
-    if (id === 'confirm') { $('execute').value = Math.max(values[0], values[1]); $('escalate').value = Math.min(values[2], values[1]); }
-    if (id === 'escalate') { $('confirm').value = Math.max(values[1], values[2]); $('execute').value = Math.max(values[0], Number($('confirm').value)); }
-    updateGate();
+
+// One question end to end. Letter softmax drives the answer; the full-vocabulary softmax (logits.js,
+// one pass) drives the inspector's top-N and the mass outside the option letters.
+export async function runQuestion(ctx, state, apiQ) {
+  const msgs = buildMessages(state, apiQ);
+  const text = renderText(ctx.tok, msgs);
+  const fwd = await forwardLast(ctx, text);
+  const n = prepare(apiQ).labels.length;
+  const ids = ctx.letterIds.slice(0, n);
+  const lp = letterProbs(fwd.logits, ids);
+  const ans = answer(apiQ, lp.probs);
+  const full = distribution(fwd.logits, 1, TOP_N);
+  const letterMass = ids.reduce((s, id) => s + probOf(full, id), 0);
+  return {
+    apiQ, text, ms: fwd.ms, seq: fwd.seq, vocab: fwd.vocab,
+    labels: prepare(apiQ).labels,
+    letters: LETTERS.slice(0, n).split(''),
+    ids,
+    letterLogits: lp.logits, letterMax: lp.max, letterLogZ: lp.logZ, probs: lp.probs,
+    answer: ans,
+    confidence: confidenceDetail(prepare(apiQ).type, lp.probs),
+    fullTop: full.top,
+    fullEntropy: full.entropy,
+    letterMass,
+    outsideMass: Math.max(0, 1 - letterMass),
   };
-  runRoute = () => operate(async () => { const result = await decide(model, request($('gate-state').value, { action: { type: 'choice', instructions: $('gate-instructions').value, criteria: presets[Number($('preset').value)].criteria } })); gateAnswer = result.answers.action; $('gate-answer').innerHTML = answerHtml('action', gateAnswer) + note(`LIVE ${ms(result.timing.total_ms)} · action names are selected keys, not generated prose.`); updateGate(); });
-  $('run').onclick = runRoute; updateGate();
 }
-function updateGate() {
-  const thresholds = ['execute', 'confirm', 'escalate'].map(id => { const v = Number($(id).value); $(`${id}-value`).textContent = v.toFixed(2); return v; });
-  if (!gateAnswer) { $('gate-band').textContent = 'AWAITING FRESH JUDGMENT'; $('gate-policy').textContent = ''; return; }
-  const confidence = gateAnswer.confidence, band = confidence >= thresholds[0] ? 'EXECUTE' : confidence >= thresholds[1] ? 'CONFIRM' : confidence >= thresholds[2] ? 'ESCALATE' : 'HOLD';
-  $('gate-band').textContent = `${band} / ${gateAnswer.choice.toUpperCase()}`;
-  $('gate-policy').innerHTML = `<p class="s1-result-line">Jev-formula confidence ${pct(confidence)} · ${band === 'EXECUTE' ? 'meets execute threshold' : band === 'CONFIRM' ? 'request human confirmation' : band === 'ESCALATE' ? 'send to a stronger model / person' : 'insufficient concentration; take no action'}.</p>${note('Policy simulation only. No host action, backend call, or permission change.')}`;
+
+// Whole preset: state parsed once, questions run in order. Errors carry the question id.
+export async function runAll(ctx, stateText, questionsUi) {
+  const state = parseState(stateText);
+  const apis = questionsUi.map(toQuestion); // validate every question before any forward pass
+  const out = [];
+  for (const [i, q] of questionsUi.entries()) out.push({ id: q.id, ...(await runQuestion(ctx, state, apis[i])) });
+  return out;
 }
-const hosts = [
-  { name: 'LILY / REUNION', story: 'Lily found her lost puppy alive and well. She laughed, hugged him, and danced with joy. She gave a hungry bird some food.' },
-  { name: 'SARA / RESCUE', story: 'Sara saw a little cat stuck in a tree. She was scared, but she climbed up and saved it. She smiled and gave it some milk.' },
-  { name: 'LUCY / RAIN', story: 'Lucy could not find her pretty hat. She frowned and slowly went home. She did not want to share her toys with anyone.' },
-  { name: 'MIA / QUIET DAY', story: 'Mia sat quietly at the table and looked at a plain cup. Nothing special happened. She gave her brother a cookie and said hello.' },
-];
-const dimensions = { happy: { type: 'score', instructions: 'She felt', criteria: happiness }, brave: { type: 'score', instructions: 'She was', criteria: ['very scared', 'scared', 'calm', 'brave', 'very brave'] }, kind: { type: 'score', instructions: 'She was', criteria: ['very mean', 'mean', 'quiet', 'kind', 'very kind'] } };
-function forge() {
-  forgeAnswers = null; inferenceRuns = 0;
-  $('route').innerHTML = `<div class="s1-toolbar">${button('run', 'SCORE ALL HOSTS ONCE')}<span id="forge-count">0 INFERENCE RUNS</span><strong>WEIGHT CHANGES RE-RANK WITHOUT RE-RUNNING INFERENCE</strong></div><div class="s1-forge-grid">${hosts.map(h => panel(escape(h.name), `<p class="s1-story">${escape(h.story)}</p>`)).join('')}</div><div class="s1-weights">${Object.keys(dimensions).map(id => slider(`weight-${id}`, `${id.toUpperCase()} WEIGHT`, 1, 3, .1)).join('')}</div>${panel('COMPOSITE RANK / WEIGHTED MEAN OF CACHED LEVEL SCORES', `<div id="forge-ranking">${blank('Four host stories × three score questions. RUN once, then mix weights freely.')}</div>`)}${note('All dimensions use 0–4 level indices. Composite = Σ(weight × score) / Σweights; zero weights produce a tie at 0. Happiness ordering was measured (Spearman ≈.90, n=20). Bravery and kindness are exploratory, not validated. Scores are toy lexical continuations, not judgments from a trained System One model.')}`;
-  Object.keys(dimensions).forEach(id => $(`weight-${id}`).oninput = updateForge);
-  runRoute = () => operate(async () => {
-    forgeAnswers = [];
-    for (const host of hosts) { $('loading-detail').textContent = `Scoring ${host.name}: happy, brave, kind.`; const result = await decide(model, request(host.story, dimensions)); forgeAnswers.push({ host, result }); inferenceRuns++; }
-    updateForge();
-  }); $('run').onclick = runRoute;
+
+// ---- DOM: editor ----------------------------------------------------------------------------
+const $ = id => document.getElementById(id);
+const TYPES = [['choice', 'choice · pick one'], ['score', 'score · ordered levels'], ['noul', 'noul · yes / no']];
+const ui = { preset: 'support', questions: [], nextId: 1 };
+
+function el(tag, props = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'class') n.className = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  n.append(...kids.flat().filter(x => x != null));
+  return n;
 }
-function updateForge() {
-  const weights = Object.fromEntries(Object.keys(dimensions).map(id => { const value = Number($(`weight-${id}`).value); $(`weight-${id}-value`).textContent = value.toFixed(1); return [id, value]; }));
-  $('forge-count').textContent = `${inferenceRuns} HOST REQUESTS / ${inferenceRuns * 3} SCORE JUDGMENTS`;
-  if (!forgeAnswers) return;
-  const denominator = Object.values(weights).reduce((a, b) => a + b, 0);
-  const rows = forgeAnswers.map(row => ({ ...row, composite: denominator ? Object.entries(weights).reduce((s, [id, w]) => s + w * row.result.answers[id].score, 0) / denominator : 0 })).sort((a, b) => b.composite - a.composite);
-  $('forge-ranking').innerHTML = `<table class="s1-table forge-table"><thead><tr><th>RANK</th><th>HOST</th><th>HAPPY / 4</th><th>BRAVE / 4</th><th>KIND / 4</th><th>COMPOSITE / 4</th><th>LIVE INFERENCE</th></tr></thead><tbody>${rows.map((row, i) => `<tr><td>${i + 1}</td><td>${escape(row.host.name)}</td>${Object.keys(dimensions).map(id => `<td title="Jev-formula confidence ${pct(row.result.answers[id].confidence)}; Clef pmax ${pct(Math.max(...Object.values(row.result.answers[id].probabilities)))}">${row.result.answers[id].score.toFixed(3)}</td>`).join('')}<td><strong>${row.composite.toFixed(3)}</strong><span class="s1-table-bar" style="width:${25 * row.composite}%"></span></td><td>${ms(row.result.timing.total_ms)}</td></tr>`).join('')}</tbody></table>${note('Cached distributions retained. Weight changes perform arithmetic only. Hover a score for Jev- vs Clef-formula confidence (both computed on the tiny GPT).')}<details><summary>ALL CACHED SCORE DISTRIBUTIONS + CONFIDENCE</summary><div class="s1-forge-details">${rows.map(row => `<section><h3>${escape(row.host.name)}</h3>${Object.entries(row.result.answers).map(([id, a]) => answerHtml(id, a)).join('')}</section>`).join('')}</div></details>`;
+
+function loadPreset(key) {
+  const p = PRESETS[key];
+  ui.preset = key;
+  ui.questions = structuredClone(p.questions);
+  $('state').value = p.state;
+  $('state-error').hidden = true;
+  renderQuestions();
+  clearAnswers();
 }
-function calibrationStats(items, method) {
-  const bins = Array.from({ length: 10 }, (_, i) => ({ lower: i / 10, n: 0, correct: 0, totalConfidence: 0 }));
-  const rows = items.map(item => { const p = item.probabilities[method], peak = Math.max(...p), correct = Number(p.indexOf(peak) === item.label), confidence = (peak - 1 / p.length) / (1 - 1 / p.length); const bin = bins[Math.min(9, Math.floor(peak * 10))]; bin.n++; bin.correct += correct; bin.totalConfidence += peak; return { item, p, peak, correct, confidence }; });
-  const n = rows.length, accuracy = rows.reduce((s, r) => s + r.correct, 0) / n, ece = bins.reduce((s, b) => s + Math.abs(b.totalConfidence - b.correct), 0) / n, brier = rows.reduce((s, r) => s + r.p.reduce((t, p, i) => t + (p - Number(i === r.item.label)) ** 2, 0), 0) / n;
-  return { rows, bins, n, accuracy, ece, brier };
+
+function renderQuestions() {
+  const box = $('questions');
+  box.replaceChildren(...ui.questions.map((q, idx) => questionEditor(q, idx)));
+  $('add-question').disabled = ui.questions.length >= 12;
 }
-function calibration() {
-  $('route').innerHTML = `<div class="s1-toolbar"><label>METHOD <select id="cal-method"><option value="sum">SUM / CONTINUATIONS</option><option value="codes">CODES / ANSWER LETTERS</option></select></label>${button('verify', 'VERIFY LIVE / 5 RANDOM FIXTURES')}<span id="verification">Precomputed by test/s1-fixtures.mjs using this exact model and adapter.</span></div><div id="cal-metrics" class="s1-metrics"></div><div class="s1-grid">${panel('RELIABILITY / 10 BINS OF MAX OPTION PROBABILITY', `<div class="s1-legend"><span><i></i>Observed accuracy</span><span><i class="second"></i>Mean pmax</span></div><div id="reliability" class="s1-reliability"></div><p class="s1-note" id="bin-hover">Hover or focus a bin for exact count, accuracy, confidence.</p><details><summary>BIN DATA / TABLE VIEW</summary><div id="bin-table"></div></details>`)}${panel('RISK–COVERAGE / FILTER BY JEV-FORMULA CHOICE CONFIDENCE', `${slider('threshold', 'ACCEPT AT OR ABOVE', .8)}<div id="coverage-metrics" class="s1-result-line"></div><svg id="risk-chart" viewBox="0 0 600 195" role="img" aria-label="Risk versus accepted coverage"></svg><p class="s1-note" id="risk-hover">Risk = 1 − accepted accuracy. Hover or focus curve.</p><details><summary>CURVE DATA / TABLE VIEW</summary><div id="risk-table"></div></details>`)}</div>${note(`SUBSET n=${fixtures.items.length}: 32 hand-written + 40 validation cloze. Gold cloze labels are observed words; other continuations may be plausible. Illustrative subset of the feasibility probe, not a new held-out evaluation. ECE uses pmax (10 equal-width bins); Brier = sum of squared class errors, not divided by option count. T=1 for both methods. Full probe n=182: SUM 87.4%, ECE .044, Brier .171; CODES 28.0% vs 26.1% chance.`)}<details class="s1-fixture-details"><summary>FIXTURES / GOLD LABELS / PRECOMPUTED PROBABILITIES</summary><div id="fixture-table"></div></details>`;
-  $('cal-method').onchange = updateCalibration; $('threshold').oninput = updateCoverage;
-  runRoute = () => operate(async () => {
-    const pool = [...fixtures.items]; for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-    const method = $('cal-method').value, selected = pool.slice(0, 5); let maxDiff = 0;
-    for (const [i, item] of selected.entries()) {
-      $('loading-detail').textContent = `VERIFY ${i + 1}/5: ${item.id} / ${method}`;
-      const result = await decide(model, request(item.prefix, { answer: { type: 'choice', instructions: '', criteria: Object.fromEntries(item.options.map((x, i) => [String(i), x])) } }), { method });
-      const p = Object.values(result.answers.answer.probabilities);
-      p.forEach((v, i) => maxDiff = Math.max(maxDiff, Math.abs(v - item.probabilities[method][i])));
-    }
-    $('verification').textContent = `VERIFIED LIVE / ${method} / n=5 / max |Δp| ${maxDiff.toExponential(3)} / ${selected.map(x => x.id).join(', ')}`;
-  }); $('verify').onclick = runRoute; updateCalibration();
+
+function questionEditor(q, idx) {
+  const hint = q.type === 'score' ? 'one line per level, low to high'
+    : q.type === 'noul' ? 'optional: line 1 = true, line 2 = false'
+    : 'one line per option: name: description';
+  const idField = el('input', { type: 'text', value: q.id, 'aria-label': `Question ${idx + 1} id`, maxlength: '40',
+    oninput: e => { q.id = e.target.value; } });
+  const typeSel = el('select', { 'aria-label': `Question ${idx + 1} type`,
+    onchange: e => { q.type = e.target.value; renderQuestions(); } },
+    TYPES.map(([v, t]) => el('option', { value: v, ...(v === q.type ? { selected: '' } : {}) }, t)));
+  const remove = el('button', { type: 'button', 'aria-label': `Remove question ${idx + 1}`,
+    onclick: () => { ui.questions.splice(idx, 1); renderQuestions(); } }, '×');
+  const instr = el('input', { type: 'text', value: q.instructions, 'aria-label': `Question ${idx + 1} text`,
+    maxlength: '400', oninput: e => { q.instructions = e.target.value; } });
+  const text = el('textarea', { rows: '4', 'aria-label': `Question ${idx + 1} options`, spellcheck: 'false',
+    oninput: e => { q.text = e.target.value; } }, q.text);
+  return el('div', { class: 's1-question' },
+    el('div', { class: 's1-question-head' }, el('label', { class: 's1-lab' }, 'id', idField), typeSel, remove),
+    el('label', { class: 's1-lab' }, 'question', instr),
+    el('label', { class: 's1-lab' }, `options · ${hint}`, text));
 }
-function updateCalibration() {
-  const method = $('cal-method').value, stats = calibrationStats(fixtures.items, method);
-  $('cal-metrics').innerHTML = [['Accuracy', pct(stats.accuracy)], ['ECE / pmax', stats.ece.toFixed(3)], ['Multiclass Brier', stats.brier.toFixed(3)], ['Chance', pct(fixtures.items.reduce((s, x) => s + 1 / x.options.length, 0) / stats.n)]].map(([label, value]) => `<div><span>${label} · n=${stats.n}</span><strong>${value}</strong></div>`).join('');
-  const rows = stats.bins.map((bin, i) => ({ ...bin, confidence: bin.n ? bin.totalConfidence / bin.n : 0, accuracy: bin.n ? bin.correct / bin.n : 0, label: `${(i / 10).toFixed(1)}–${((i + 1) / 10).toFixed(1)}` }));
-  $('reliability').innerHTML = `<div class="s1-y-axis"><span>100%</span><span>50%</span><span>0%</span></div><div class="s1-bin-columns">${rows.map(row => `<div class="s1-bin" data-bin="${row.lower}"><div class="s1-bin-marks"><i style="height:${100 * row.accuracy}%"></i><i class="second" style="height:${100 * row.confidence}%"></i></div><span>${row.lower.toFixed(1)}</span><b>n=${row.n}</b></div>`).join('')}</div>`;
-  document.querySelectorAll('.s1-bin').forEach((node, i) => { const r = rows[i]; tooltip(node, `${r.label}: n=${r.n}; accuracy ${r.n ? pct(r.accuracy) : '—'}; mean pmax ${r.n ? pct(r.confidence) : '—'}`, $('bin-hover')); });
-  $('bin-table').innerHTML = table(['PMAX BIN', 'COUNT', 'ACCURACY', 'MEAN PMAX'], rows.map(r => [r.label, r.n, r.n ? pct(r.accuracy) : '—', r.n ? pct(r.confidence) : '—']));
-  $('fixture-table').innerHTML = table(['ID / CATEGORY', 'GOLD', 'TOP CHOICE', 'PMAX', 'JEV-FORMULA CONF.'], stats.rows.map(r => [`${r.item.id} / ${r.item.category}`, r.item.options[r.item.label], r.item.options[r.p.indexOf(r.peak)], pct(r.peak), pct(r.confidence)]));
-  updateCoverage();
+
+function fillPresets() {
+  $('preset').replaceChildren(...Object.entries(PRESETS).map(([k, p]) =>
+    el('option', { value: k, ...(k === ui.preset ? { selected: '' } : {}) }, p.label)));
 }
-function table(headers, rows) { return `<table class="s1-table"><thead><tr>${headers.map(x => `<th>${escape(x)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(x => `<td>${escape(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`; }
-function coverage(rows, threshold) { const accepted = rows.filter(r => r.confidence >= threshold); return { n: accepted.length, coverage: accepted.length / rows.length, accuracy: accepted.length ? accepted.reduce((s, r) => s + r.correct, 0) / accepted.length : null }; }
-function updateCoverage() {
-  const stats = calibrationStats(fixtures.items, $('cal-method').value), threshold = Number($('threshold').value), current = coverage(stats.rows, threshold);
-  $('threshold-value').textContent = threshold.toFixed(2);
-  $('coverage-metrics').textContent = `Accepted accuracy ${current.accuracy === null ? '—' : pct(current.accuracy)} (n=${current.n}) · coverage ${pct(current.coverage)} (${current.n}/${stats.n})`;
-  const curve = Array.from({ length: 21 }, (_, i) => ({ threshold: i / 20, ...coverage(stats.rows, i / 20) })).filter(x => x.n);
-  const x = c => 45 + c * 520, y = risk => 160 - risk * 130;
-  const svg = $('risk-chart');
-  svg.innerHTML = `<title>Risk–coverage curve, n=${stats.n}; risk is one minus accepted accuracy</title>${[0, .5, 1].map(v => `<line class="s1-gridline" x1="45" x2="565" y1="${y(v)}" y2="${y(v)}"/><text x="7" y="${y(v) + 4}">${pct(v)}</text>`).join('')}<text x="45" y="185">0% coverage</text><text x="478" y="185">100% coverage</text><polyline class="s1-risk-line" points="${curve.map(c => `${x(c.coverage)},${y(1 - c.accuracy)}`).join(' ')}"/><line id="risk-crosshair" class="s1-crosshair" x1="0" x2="0" y1="25" y2="160" visibility="hidden"/>${current.n ? `<circle class="s1-risk-dot" cx="${x(current.coverage)}" cy="${y(1 - current.accuracy)}" r="5"/>` : ''}${curve.map((c, i) => `<rect data-point="${i}" class="s1-hit" x="${x(c.coverage) - 12}" y="20" width="24" height="140" tabindex="0"/>`).join('')}`;
-  svg.querySelectorAll('[data-point]').forEach(node => { const c = curve[Number(node.dataset.point)], text = `Threshold ${c.threshold.toFixed(2)}: coverage ${pct(c.coverage)} (${c.n}/${stats.n}); accepted accuracy ${pct(c.accuracy)}; risk ${pct(1 - c.accuracy)}.`; tooltip(node, text, $('risk-hover')); const show = () => { const line = $('risk-crosshair'); line.setAttribute('visibility', 'visible'); line.setAttribute('x1', x(c.coverage)); line.setAttribute('x2', x(c.coverage)); }; node.addEventListener('pointerenter', show); node.addEventListener('focus', show); });
-  $('risk-table').innerHTML = table(['THRESHOLD', 'ACCEPTED N', 'COVERAGE', 'ACCURACY', 'RISK'], curve.map(c => [c.threshold.toFixed(2), c.n, pct(c.coverage), pct(c.accuracy), pct(1 - c.accuracy)]));
+
+function clearAnswers() {
+  $('answers').replaceChildren(el('p', { class: 's1-note' }, 'Load the model, then run.'));
 }
-const currentRoute = () => location.hash.slice(2) || 'playground';
-function renderRoute() {
-  if (busy || !model) return;
-  route = ['playground', 'fanout', 'gate', 'forge', 'calibration'].includes(currentRoute()) ? currentRoute() : 'playground';
-  $('app-message').textContent = '';
-  document.querySelectorAll('.s1-routes a').forEach(a => { const active = a.hash === `#/${route}`; a.classList.toggle('active', active); if (active) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
-  ({ playground, fanout, gate, forge, calibration })[route]();
-  document.body.dataset.route = route;
-  if (new URLSearchParams(location.search).has('autorun')) runRoute();
-  else document.body.dataset.ready = 'true';
+
+// Editor events: state, preset switch, add, reset.
+$('preset').addEventListener('change', e => loadPreset(e.target.value));
+$('reset').addEventListener('click', () => loadPreset(ui.preset));
+$('add-question').addEventListener('click', () => {
+  ui.questions.push({ id: `q${ui.nextId++}`, type: 'choice', instructions: '', text: 'yes: affirmative\nno: negative' });
+  renderQuestions();
+});
+$('state').addEventListener('input', () => {
+  try { parseState($('state').value); $('state-error').hidden = true; }
+  catch (err) { $('state-error').textContent = err.message; $('state-error').hidden = false; }
+});
+
+// ---- DOM: answers ---------------------------------------------------------------------------
+const pct = x => `${(x * 100).toFixed(1)}%`;
+// Probability bar: a track with fill; nothing under 0.5% (a sliver reads as a stray mark).
+const bar = p => (p < 0.005 ? el('span', {}) : el('span', { class: 's1-track' }, el('i', { style: `width:${(p * 100).toFixed(1)}%` })));
+const f6 = x => (Number.isFinite(x) ? x.toFixed(6) : String(x));
+
+function answerCard(r, idx) {
+  const a = r.answer;
+  const head = el('h3', {}, `${idx + 1}. ${r.id}`, el('span', {}, `  ${r.apiQ.type.toUpperCase()}`));
+  const chips = el('div', { class: 's1-chips', role: 'list' });
+  const pick = r.probs.indexOf(Math.max(...r.probs));
+  r.labels.forEach((label, i) => {
+    const p = r.probs[i];
+    const name = a.type === 'noul' ? (i === 0 ? 'YES' : 'NO') : a.type === 'score' ? `level ${label}` : label;
+    chips.append(el('div', { class: `chip${i === pick ? ' on' : ''}`, role: 'listitem', title: `${r.letters[i]} · ${name}` },
+      el('span', { class: 's1-name' }, `${r.letters[i]}. ${name}`),
+      el('span', { class: 'prob' }, pct(p)),
+      el('span', { class: 'prob-bar', style: `width:${(p * 100).toFixed(2)}%` })));
+  });
+  const verdict = a.type === 'noul' ? `p(yes) = ${f6(a.noul)}`
+    : a.type === 'choice' ? `choice = ${a.choice}`
+    : `score = ${f6(a.score)}`;
+  const meter = a.type === 'noul' ? null : el('div', { class: 's1-meter' },
+    el('span', {}, 'CONFIDENCE'), el('span', { class: 'meter' }, el('i', { style: `width:${(a.confidence * 100).toFixed(1)}%` })),
+    el('strong', {}, a.confidence.toFixed(3)));
+  const raw = el('p', { class: 's1-raw' }, `${verdict} · ${r.ms.toFixed(0)} ms · ${r.seq} tokens`);
+  const details = el('details', {}, el('summary', {}, 'LOGIT INSPECTOR · LOGITS, CONFIDENCE, FULL VOCABULARY, PROMPT'),
+    el('div', { class: 's1-inspector' }, inspectorBody(r, ctx)));
+  return el('section', { class: 's1-answer', 'data-qid': r.id }, head, chips, meter, raw, details);
 }
-// Small, deterministic metric check; no chart numbers may silently drift.
-let duplicateRejected = false;
-try { parseCriteria('{"same":"a","same":"b"}'); } catch { duplicateRejected = true; }
-if (!duplicateRejected || parseCriteria('{"unique":"a","other":"b"}').other !== 'b') throw new Error('Criteria-key self-check failed.');
-const check = calibrationStats([{ label: 0, probabilities: { sum: [.5, .5] } }], 'sum');
-if (check.accuracy !== 1 || check.ece !== .5 || check.brier !== .5 || coverage(check.rows, .1).n !== 0) throw new Error('Calibration metric self-check failed.');
-$('texture').onclick = () => { const active = document.body.classList.toggle('texture'); $('texture').setAttribute('aria-pressed', String(active)); };
-window.addEventListener('hashchange', renderRoute);
-try {
-  if (location.protocol === 'file:') throw new Error('HTTP server required. Serve with python3 -m http.server 8766.');
-  [model, fixtures] = await Promise.all([loadModel('./model/'), fetch('./s1-fixtures.json').then(response => { if (!response.ok) throw new Error('Calibration fixture load failed.'); return response.json(); })]);
-  $('system-status').textContent = 'HOST ONLINE / REAL GPT'; $('loading-overlay').hidden = true;
-  if (!location.hash) history.replaceState(null, '', `${location.pathname}${location.search}#/playground`);
-  renderRoute();
-} catch (error) {
-  $('loading-overlay').classList.add('error'); $('loading-title').textContent = 'HOST LOAD FAILED'; $('loading-detail').textContent = error.message; $('loading-progress').hidden = true; $('system-status').textContent = 'HOST OFFLINE'; console.error(error);
+
+function renderAnswers(results) {
+  const box = $('answers');
+  box.replaceChildren(...results.map(answerCard));
+  const top = results.map(r => Math.max(...r.probs));
+  const best = results.reduce((b, r, i) => (top[i] > top[b] ? i : b), 0);
+  $('top-prob').textContent = pct(top[best]);
+  $('top-conf').textContent = results[best].answer.confidence?.toFixed(3) ?? '—';
+  $('forward-ms').textContent = `${Math.round(results.at(-1).ms)} ms`;
+}
+
+// Inspector body for one question: letter table, confidence math, full vocabulary, rendered prompt.
+function inspectorBody(r, ctx) {
+  const n = r.labels.length;
+  const cum = r.probs.reduce((acc, p) => (acc.length ? [...acc, acc.at(-1) + p] : [p]), []);
+  const letterRows = r.letters.map((L, i) => el('tr', { class: r.probs[i] === Math.max(...r.probs) ? 'chosen' : '' },
+    el('td', {}, L), el('td', {}, r.labels[i]), el('td', { class: 's1-id' }, String(r.ids[i])),
+    el('td', {}, f6(r.letterLogits[i])), el('td', {}, f6(r.letterLogits[i] - r.letterMax)),
+    el('td', {}, f6(r.probs[i])), el('td', {}, f6(cum[i]))));
+  const conf = r.confidence;
+  const formula = conf.type === 'noul' ? `confidence not used; p(yes) = softmax over [yes, no] = ${f6(conf.pYes)}`
+    : conf.type === 'choice' ? `confidence = (pmax − 1/n) / (1 − 1/n) = (${f6(conf.pmax)} − ${f6(conf.uniform)}) / (1 − ${f6(conf.uniform)}) = ${f6(conf.value)}`
+    : `confidence = max(0, 1 − Σ p·|i − mode| / uniformMAD) = max(0, 1 − ${f6(conf.distance)} / ${f6(conf.uniformMad)}) = ${f6(conf.value)}  (mode level ${conf.mode})`;
+  const fullRows = r.fullTop.map((t, k) => el('tr', { class: r.ids.includes(t.id) ? 'chosen' : '', title: `token id ${t.id}` },
+    el('td', {}, String(k + 1)), el('td', { class: 's1-tok' }, tokenView(ctx.tok, t.id, ctx.pieces, ctx.byteOf)),
+    el('td', { class: 's1-id' }, String(t.id)), el('td', {}, f6(t.logit)),
+    el('td', {}, f6(t.prob)), el('td', {}, bar(t.prob))));
+  return [
+    el('h3', {}, 'A. LETTER LOGITS → SOFTMAX'),
+    el('div', { class: 'table-scroll' }, el('table', { class: 's1-table' },
+      el('thead', {}, el('tr', {}, ...['LETTER', 'OPTION', 'TOKEN', 'LOGIT', 'LOGIT − MAX', 'PROB', 'CUM'].map(h => el('th', {}, h)))),
+      el('tbody', {}, letterRows))),
+    el('h3', {}, 'B. CONFIDENCE'),
+    el('p', { class: 's1-raw' }, formula),
+    el('h3', {}, `C. FULL VOCABULARY AT ANSWER SLOT · ${r.vocab.toLocaleString('en-US')} TOKENS · TOP ${TOP_N}`),
+    el('p', { class: 's1-mass' }, `probability mass on option letters: ${f6(r.letterMass)}; outside the option letters: ${f6(r.outsideMass)}; entropy ${r.fullEntropy.toFixed(3)} bits`),
+    el('div', { class: 'table-scroll' }, el('table', { class: 's1-table' },
+      el('thead', {}, el('tr', {}, ...['#', 'TOKEN', 'ID', 'LOGIT', 'PROB', ''].map(h => el('th', {}, h)))),
+      el('tbody', {}, fullRows))),
+    el('h3', {}, 'D. RENDERED PROMPT'),
+    el('details', {}, el('summary', {}, `show the exact text the model sees · ${r.seq} tokens`),
+      el('pre', {}, r.text)),
+    el('p', { class: 's1-raw' }, `${n} option${n === 1 ? '' : 's'} · ${r.ms.toFixed(0)} ms forward`),
+  ];
+}
+
+// ---- DOM: load, run, boot -------------------------------------------------------------------
+let ctx = null;
+const hasWebGPU = () => typeof navigator !== 'undefined' && !!navigator.gpu;
+
+function setPhase(text, status) {
+  $('phase').textContent = text;
+  $('system-status').textContent = status ?? text;
+}
+
+async function load() {
+  if (!hasWebGPU()) {
+    $('loading-title').textContent = 'NO WEBGPU';
+    $('loading-detail').textContent = 'System One needs WebGPU. Use a current Chrome or Edge with WebGPU enabled.';
+    $('load').hidden = true;
+    return;
+  }
+  $('load').disabled = true;
+  $('loading-overlay').hidden = false;
+  navigator.storage?.persist?.();
+  $('loading-title').textContent = 'LOADING SYSTEM ONE…';
+  $('loading-detail').textContent = 'Downloading pinned weights from Hugging Face.';
+  $('loading-progress').hidden = false;
+  setPhase('LOADING', 'LOADING MODEL');
+  try {
+    ctx = await loadModel(p => {
+      if (p.status === 'progress' && p.total) { $('loading-progress').value = p.loaded / p.total; }
+    });
+    window.__s1ctx = ctx; // exposed for browser QA only
+    $('loading-title').textContent = 'LOAD SYSTEM ONE';
+    $('loading-detail').textContent = 'OneJev-0.8B loaded.';
+    $('loading-overlay').hidden = true;
+    $('run').disabled = false;
+    setPhase('READY', 'SYSTEM ONE READY');
+    $('model-kind').textContent = 'READY';
+  } catch (err) {
+    $('loading-title').textContent = 'LOAD FAILED';
+    $('loading-detail').textContent = err.message;
+    $('load').disabled = false;
+    $('loading-progress').hidden = true;
+    setPhase('FAILED', 'LOAD FAILED');
+  }
+}
+
+async function run() {
+  if (!ctx) return;
+  $('run').disabled = true;
+  $('run-status').textContent = 'running…';
+  try {
+    const results = await runAll(ctx, $('state').value, ui.questions);
+    window.__s1 = results; // exposed for browser QA: raw probs, not rounded percentages
+    renderAnswers(results);
+    $('run-status').textContent = `${results.length} question${results.length === 1 ? '' : 's'} · ${results.reduce((s, r) => s + r.ms, 0).toFixed(0)} ms total`;
+  } catch (err) {
+    $('answers').replaceChildren(el('p', { class: 's1-error', role: 'alert' }, err.message));
+    $('run-status').textContent = '';
+  } finally {
+    $('run').disabled = false;
+  }
+}
+
+$('load').addEventListener('click', load);
+$('run').addEventListener('click', run);
+
+// Boot: preset list, first preset in the editor, auto-load if the browser already has the weights.
+fillPresets();
+loadPreset(ui.preset);
+if (!hasWebGPU()) {
+  $('loading-title').textContent = 'NO WEBGPU';
+  $('loading-detail').textContent = 'System One needs WebGPU. Use a current Chrome or Edge with WebGPU enabled.';
+  $('load').hidden = true;
+} else {
+  $('loading-overlay').hidden = false;
+  // Auto-load only when the weights are really in the Cache API (a flag can outlive an evicted cache).
+  caches.open('transformers-cache').then(c => c.match(WEIGHTS)).then(hit => { if (hit) load(); }).catch(() => {});
 }

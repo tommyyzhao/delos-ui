@@ -1,0 +1,250 @@
+[
+ {
+  "name": "text-support",
+  "state": {
+   "channel": "email",
+   "body": "Hi, we were billed twice for March. Please refund the duplicate today or we will cancel our plan."
+  },
+  "media": [],
+  "questions": {
+   "department": {
+    "type": "choice",
+    "instructions": "Which team should handle this?",
+    "criteria": {
+     "billing": "charges, invoices, refunds",
+     "technical": "bugs, outages",
+     "sales": "pricing, new plans"
+    }
+   },
+   "urgency": {
+    "type": "score",
+    "instructions": "How urgent is this?",
+    "criteria": [
+     "not urgent",
+     "soon",
+     "today",
+     "right now"
+    ]
+   },
+   "churn": {
+    "type": "noul",
+    "instructions": "The customer threatens to cancel."
+   }
+  },
+  "answers": {
+   "department": {
+    "type": "choice",
+    "choice": "billing",
+    "probabilities": {
+     "billing": 0.97006,
+     "technical": 0.005103,
+     "sales": 0.024837
+    },
+    "confidence": 0.955091
+   },
+   "urgency": {
+    "type": "score",
+    "score": 2.090011,
+    "legend": {
+     "0": "not urgent",
+     "1": "soon",
+     "2": "today",
+     "3": "right now"
+    },
+    "probabilities": {
+     "0": 0.015816,
+     "1": 0.127902,
+     "2": 0.606739,
+     "3": 0.249544
+    },
+    "confidence": 0.590923
+   },
+   "churn": {
+    "type": "noul",
+    "noul": 0.925034
+   }
+  },
+  "hf": {
+   "department": [
+    0.9700599312782288,
+    0.005103156901896,
+    0.024836823344230652
+   ],
+   "urgency": [
+    0.015815723687410355,
+    0.1279023289680481,
+    0.606739342212677,
+    0.24954257905483246
+   ],
+   "churn": [
+    0.9250338077545166,
+    0.07496622204780579
+   ]
+  }
+ },
+ {
+  "name": "image-review",
+  "state": {
+   "source": "product review screenshot",
+   "review": "<image:1>"
+  },
+  "media": [
+   {
+    "type": "image",
+    "file": "review.png"
+   }
+  ],
+  "questions": {
+   "is_urgent": {
+    "type": "noul",
+    "instructions": "This review needs a reply from support today."
+   },
+   "sentiment": {
+    "type": "choice",
+    "instructions": "What is the reviewer's sentiment?",
+    "criteria": {
+     "positive": null,
+     "mixed": null,
+     "negative": null,
+     "furious": "angry and threatening action"
+    }
+   },
+   "safety": {
+    "type": "noul",
+    "instructions": "The review reports a safety hazard."
+   },
+   "stars": {
+    "type": "score",
+    "instructions": "How many stars did the reviewer give?",
+    "criteria": [
+     "1",
+     "2",
+     "3",
+     "4",
+     "5"
+    ]
+   }
+  },
+  "answers": {
+   "is_urgent": {
+    "type": "noul",
+    "noul": 0.168192
+   },
+   "sentiment": {
+    "type": "choice",
+    "choice": "negative",
+    "probabilities": {
+     "positive": 0.004834,
+     "mixed": 0.026025,
+     "negative": 0.499899,
+     "furious": 0.469243
+    },
+    "confidence": 0.333199
+   },
+   "safety": {
+    "type": "noul",
+    "noul": 0.778201
+   },
+   "stars": {
+    "type": "score",
+    "score": 3.540869,
+    "legend": {
+     "0": "1",
+     "1": "2",
+     "2": "3",
+     "3": "4",
+     "4": "5"
+    },
+    "probabilities": {
+     "0": 0.007635,
+     "1": 0.006696,
+     "2": 0.035333,
+     "3": 0.337838,
+     "4": 0.612498
+    },
+    "confidence": 0.617391
+   }
+  },
+  "hf": {
+   "is_urgent": [
+    0.18524877727031708,
+    0.814751148223877
+   ],
+   "sentiment": [
+    0.005669422913342714,
+    0.03047035075724125,
+    0.5622178912162781,
+    0.4016423225402832
+   ],
+   "safety": [
+    0.7121907472610474,
+    0.28780925273895264
+   ],
+   "stars": [
+    0.005825690925121307,
+    0.006337390281260014,
+    0.03276090696454048,
+    0.2947492003440857,
+    0.6603268384933472
+   ]
+  }
+ },
+ {
+  "name": "image-payment",
+  "state": {
+   "task": "Pay the open invoice from ACME",
+   "screen": "<image:1>"
+  },
+  "media": [
+   {
+    "type": "image",
+    "file": "payment.png"
+   }
+  ],
+  "questions": {
+   "done": {
+    "type": "noul",
+    "instructions": "The invoice has been paid."
+   },
+   "next": {
+    "type": "choice",
+    "instructions": "What should the agent do next?",
+    "criteria": {
+     "click": "click an element",
+     "type": "type text",
+     "scroll": "scroll the page",
+     "stop": "stop, the task is finished"
+    }
+   }
+  },
+  "answers": {
+   "done": {
+    "type": "noul",
+    "noul": 0.963806
+   },
+   "next": {
+    "type": "choice",
+    "choice": "stop",
+    "probabilities": {
+     "click": 0.224949,
+     "type": 0.017905,
+     "scroll": 0.027854,
+     "stop": 0.729292
+    },
+    "confidence": 0.639056
+   }
+  },
+  "hf": {
+   "done": [
+    0.9673776030540466,
+    0.03262241557240486
+   ],
+   "next": [
+    0.20465050637722015,
+    0.01707102544605732,
+    0.02702462300658226,
+    0.7512537837028503
+   ]
+  }
+ }
+]

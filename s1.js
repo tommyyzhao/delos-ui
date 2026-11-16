@@ -1,90 +1,148 @@
-// Local continuation adapter, not a trained System One head. No text generation.
-export const stateText = state => Object.keys(state).length === 1 && typeof state.story === 'string' ? state.story : JSON.stringify(state);
-export function scoreConfidence(p) {
-  const n = p.length, m = p.indexOf(Math.max(...p));
-  const D = p.reduce((s, _, i) => s + Math.abs(i - (n - 1) / 2), 0) / n;
-  return Math.max(0, 1 - p.reduce((s, v, i) => s + v * Math.abs(i - m), 0) / D);
+// System One (OneJev) prompt, letter softmax, confidence and answer shapes. Pure: no DOM, no model.
+// Ported from OmniJev/OneJev qev/prompt.py and qev/answers.py (commit cb06fe0); confidence = TypeSafe formulas.
+// ponytail: options limited to single letters A-Z (one token each); score capped at 10 levels like upstream schema.
+export const SYSTEM_PROMPT = 'Apply the question to the state. Choose exactly one of the listed options. Respond with only its uppercase letter, with no explanation or reasoning.';
+export const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+export const MAX_OPTIONS = 26;
+export const MAX_LEVELS = 10;
+const NOUL_INSTRUCTIONS = 'Is the statement true, or is the answer to the question yes?';
+const NOUL_TRUE = 'the statement is true / the answer is yes';
+const NOUL_FALSE = 'the statement is false / the answer is no';
+const CHOICE_INSTRUCTIONS = 'Which option applies to the state?';
+const SCORE_INSTRUCTIONS = 'Which level describes the state?';
+
+// render_entry: null -> '', string -> trimmed, anything else -> pretty JSON.
+const entry = x => (x == null ? '' : typeof x === 'string' ? x.trim() : JSON.stringify(x, null, 2));
+
+export function stateText(state) {
+  return state == null ? '' : typeof state === 'string' ? state : JSON.stringify(state, null, 2);
 }
-function softmax(scores, temperature) {
-  if (!scores.length || scores.some(x => !Number.isFinite(x))) throw new Error('Invalid model scores.');
-  const max = Math.max(...scores), w = scores.map(x => Math.exp((x - max) / temperature));
-  const sum = w.reduce((a, b) => a + b, 0);
-  return w.map(x => x / sum);
+
+// Console input: JSON objects/arrays are structured state, anything else is raw text.
+export function parseState(text) {
+  if (!text.trim()) throw new Error('State is empty.');
+  let state = text;
+  try { const v = JSON.parse(text); if (v && typeof v === 'object') state = v; } catch { /* raw text */ }
+  checkFinite(state);
+  return state;
 }
-function logProbability(logits, id) {
-  if (!logits.length || !Number.isInteger(id) || id < 0 || id >= logits.length) throw new Error('Invalid token or logits.');
-  let max = -Infinity;
-  for (const z of logits) { if (!Number.isFinite(z)) throw new Error('Invalid model logits.'); max = Math.max(max, z); }
-  let total = 0;
-  for (const z of logits) total += Math.exp(z - max);
-  return logits[id] - max - Math.log(total);
+
+function checkFinite(v) {
+  if (typeof v === 'number' && !Number.isFinite(v)) throw new Error('State contains a non-finite number.');
+  if (v && typeof v === 'object') for (const x of Object.values(v)) checkFinite(x);
 }
-const object = x => x !== null && typeof x === 'object' && !Array.isArray(x);
-const yieldPaint = () => new Promise(resolve => setTimeout(resolve, 0));
-export async function decide(model, request, { temperature = 1, method = 'sum' } = {}) {
-  if (!Number.isFinite(temperature) || temperature <= 0) throw new TypeError('Temperature must be finite and positive.');
-  if (!['sum', 'codes'].includes(method)) throw new TypeError('Method must be sum or codes.');
-  if (!object(request) || typeof request.model !== 'string' || !request.model.trim() || !object(request.state) || !object(request.questions) || !Object.keys(request.questions).length) throw new TypeError('Expected model, state object, and nonempty questions map.');
-  const state = stateText(request.state), stateIds = model.encode(state), limit = model.config?.sequence_len ?? 256;
-  const fits = ids => { if (ids.length >= limit) throw new RangeError(`Request exceeds ${limit - 1} tokens; shorten state, instructions, or criteria. No silent context crop.`); };
-  fits(stateIds);
-  const jobs = Object.entries(request.questions).map(([id, q]) => {
-    if (!object(q) || !['choice', 'score', 'noul'].includes(q.type) || typeof q.instructions !== 'string') throw new TypeError(`${id}: expected typed question with string instructions.`);
-    if (q.type === 'score' ? !Array.isArray(q.criteria) : !object(q.criteria)) throw new TypeError(`${id}: invalid criteria shape.`);
-    if (q.type === 'noul' && (Object.keys(q.criteria).length !== 2 || !Object.hasOwn(q.criteria, 'true') || !Object.hasOwn(q.criteria, 'false'))) throw new TypeError(`${id}: noul requires true and false criteria.`);
-    const entries = q.type === 'score' ? q.criteria.map((x, i) => [String(i), x]) : q.type === 'noul' ? [['true', q.criteria.true], ['false', q.criteria.false]] : Object.entries(q.criteria);
-    if (entries.length < 2 || entries.length > 255 || entries.some(([k, v]) => !k || typeof v !== 'string' || !v.trim())) throw new TypeError(`${id}: use 2–255 nonempty literal continuations.`);
-    const prefix = state + (q.instructions ? ' ' + q.instructions : ''), ids = model.encode(prefix), options = entries.map(([, text]) => model.encode(' ' + text));
-    options.forEach(tokens => fits(ids.concat(tokens)));
-    let codes, promptIds;
-    if (method === 'codes') {
-      if (entries.length > 26) throw new RangeError('Answer-letter comparison supports at most 26 options.');
-      codes = entries.map((_, i) => model.encode(' ' + String.fromCharCode(65 + i)));
-      if (codes.some(tokens => tokens.length !== 1)) throw new Error('Answer codes must encode as single tokens.');
-      promptIds = model.encode(prefix + '\n' + entries.map(([, text], i) => `${String.fromCharCode(65 + i)}) ${text}`).join(' ') + '\nThe answer is');
-      fits(promptIds);
-    }
-    return { id, q, entries, ids, options, codes, promptIds };
-  });
-  const start = performance.now(), prefill = performance.now();
-  await model.logits(stateIds);
-  const timing = { state_prefill_ms: performance.now() - prefill, questions: {}, total_ms: 0 };
-  let inputTokens = stateIds.length;
-  const answers = [];
-  for (const job of jobs) {
-    await yieldPaint();
-    const t = performance.now();
-    const { id, q, entries, ids, options, codes, promptIds } = job;
-    let scores;
-    if (method === 'codes') {
-      const z = await model.logits(promptIds);
-      scores = codes.map(tokens => logProbability(z, tokens[0]));
-      inputTokens += promptIds.length - stateIds.length;
-    } else {
-      const first = await model.logits(ids);
-      scores = [];
-      for (const tokens of options) {
-        await yieldPaint();
-        let score = logProbability(first, tokens[0]);
-        for (let j = 1; j < tokens.length; j++) {
-          await yieldPaint();
-          score += logProbability(await model.logits(ids.concat(tokens.slice(0, j))), tokens[j]);
-        }
-        scores.push(score);
-      }
-      inputTokens += ids.length - stateIds.length + options.reduce((s, tokens) => s + tokens.length, 0);
-    }
-    const p = softmax(scores, temperature), peak = Math.max(...p), best = p.indexOf(peak);
-    const probabilities = Object.fromEntries(entries.map(([key], i) => [key, p[i]]));
-    const answer = q.type === 'noul' ? { type: 'noul', noul: p[0] } : q.type === 'choice'
-      ? { type: 'choice', choice: entries[best][0], probabilities, confidence: (peak - 1 / p.length) / (1 - 1 / p.length) }
-      : { type: 'score', score: p.reduce((s, v, i) => s + v * i, 0), legend: Object.fromEntries(entries), probabilities, confidence: scoreConfidence(p) };
-    answers.push([id, answer]);
-    Object.defineProperty(timing.questions, id, { value: performance.now() - t, enumerable: true });
+
+// UI rows -> System One question (API shape). Empty description = null = default text, as upstream.
+export function toApi(q) {
+  const rows = q.rows ?? [];
+  const instructions = q.instructions?.trim() || null;
+  if (q.type === 'noul') {
+    return { type: 'noul', instructions, criteria: { true: rows[0]?.desc?.trim() || null, false: rows[1]?.desc?.trim() || null } };
   }
-  timing.total_ms = performance.now() - start;
-  // Input usage is a logical adapter token budget, not engine KV work or a remote invoice.
-  const response = { model: request.model, answers: Object.fromEntries(answers), usage: { input_tokens: inputTokens, output_tokens: 0 } };
-  // Local diagnostic extension; serialized JSON remains the exact backend contract.
-  return Object.defineProperty(response, 'timing', { value: timing, enumerable: false });
+  if (q.type === 'score') {
+    return { type: 'score', instructions, criteria: rows.map(r => r.desc?.trim() || null) };
+  }
+  if (q.type !== 'choice') throw new Error(`Question "${q.id}": unknown type "${q.type}".`);
+  const seen = new Set(), entries = [];
+  for (const r of rows) {
+    const name = r.name ?? '';
+    if (!name.trim()) throw new Error(`Question "${q.id}": option names cannot be empty.`);
+    // JS objects order integer-like keys numerically, which would reorder the option letters.
+    if (/^\d+$/.test(name.trim())) throw new Error(`Question "${q.id}": option names cannot be plain numbers ("${name}"); add a word, e.g. "option ${name}".`);
+    if (seen.has(name)) throw new Error(`Question "${q.id}": duplicate option "${name}".`);
+    seen.add(name);
+    entries.push([name, r.desc?.trim() || null]);
+  }
+  return { type: 'choice', instructions, criteria: Object.fromEntries(entries) };
+}
+
+// Validate an API-shape question and return its rendering plan.
+export function prepare(api) {
+  const instructions = entry(api.instructions);
+  if (api.type === 'noul') {
+    const c = api.criteria ?? {};
+    return {
+      type: 'noul', instructions: instructions || NOUL_INSTRUCTIONS,
+      labels: ['yes', 'no'], names: ['yes', 'no'],
+      descs: [c.true == null ? NOUL_TRUE : c.true, c.false == null ? NOUL_FALSE : c.false], levels: null,
+    };
+  }
+  if (api.type === 'choice') {
+    const keys = Object.keys(api.criteria ?? {});
+    if (!keys.length) throw new Error('Choice needs at least one option.');
+    if (keys.length > MAX_OPTIONS) throw new Error(`Choice has ${keys.length} options; maximum is ${MAX_OPTIONS}.`);
+    return { type: 'choice', instructions: instructions || CHOICE_INSTRUCTIONS, labels: keys, names: keys, descs: keys.map(k => api.criteria[k]), levels: null };
+  }
+  if (api.type === 'score') {
+    const levels = api.criteria;
+    if (!Array.isArray(levels) || !levels.length) throw new Error('Score needs at least one level.');
+    if (levels.length > MAX_LEVELS) throw new Error(`Score has ${levels.length} levels; maximum is ${MAX_LEVELS}.`);
+    return {
+      type: 'score', instructions: instructions || SCORE_INSTRUCTIONS,
+      labels: levels.map((_, i) => String(i)), names: levels.map((_, i) => `level ${i}`), descs: levels, levels,
+    };
+  }
+  throw new Error(`Unknown question type "${api.type}".`);
+}
+
+// prompt.py render_question + build_messages, byte for byte.
+export function buildMessages(state, api) {
+  const p = prepare(api);
+  const header = p.type === 'score' ? 'Rate the state:' : 'Question:';
+  const lines = p.labels.map((_, i) => {
+    const text = entry(p.descs[i]);
+    return text ? `${LETTERS[i]}. ${p.names[i]}: ${text}` : `${LETTERS[i]}. ${p.names[i]}`;
+  }).join('\n');
+  const letters = p.labels.map((_, i) => LETTERS[i]).join(', ');
+  const suffix = `${header} ${p.instructions}\n\nOptions:\n${lines}\n\nAnswer with one letter: ${letters}.`;
+  return [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: `<state>\n${stateText(state)}\n</state>\n\n${suffix}` },
+  ];
+}
+
+// Softmax over the option-letter logits only. `logits` is indexable by token id.
+export function letterProbs(logits, letterIds) {
+  const xs = letterIds.map(id => logits[id]);
+  if (xs.some(x => !Number.isFinite(x))) throw new Error('Model returned invalid logits.');
+  const max = Math.max(...xs);
+  const e = xs.map(x => Math.exp(x - max));
+  const z = e.reduce((a, b) => a + b, 0);
+  return { logits: xs, max, logZ: max + Math.log(z), probs: e.map(v => v / z) };
+}
+
+const argmax = p => p.reduce((best, v, i) => (v > p[best] ? i : best), 0);
+
+// Confidence with the intermediate numbers, for the inspector.
+export function confidenceDetail(type, p) {
+  const n = p.length;
+  if (type === 'noul') return { type, value: p[0], pYes: p[0] };
+  if (n === 1) return { type, value: 1, n };
+  if (type === 'choice') {
+    const pmax = Math.max(...p), uniform = 1 / n;
+    return { type, n, pmax, uniform, value: (pmax - uniform) / (1 - uniform) };
+  }
+  const mode = argmax(p), center = (n - 1) / 2;
+  const distance = p.reduce((s, v, i) => s + v * Math.abs(i - mode), 0);
+  const uniformMad = p.reduce((s, _, i) => s + Math.abs(i - center), 0) / n;
+  return { type, n, mode, distance, uniformMad, value: Math.max(0, 1 - distance / uniformMad) };
+}
+
+const r6 = x => Math.round(x * 1e6) / 1e6;
+
+// Probabilities over labels -> System One answer (API shape, 6 dp like answers.py).
+export function answer(api, probs) {
+  const p = prepare(api);
+  const confidence = confidenceDetail(p.type, probs).value;
+  if (p.type === 'noul') return { type: 'noul', noul: r6(Math.min(1, Math.max(0, probs[0]))) };
+  const probabilities = Object.fromEntries(p.labels.map((l, i) => [l, r6(probs[i])]));
+  if (p.type === 'choice') {
+    return { type: 'choice', choice: p.labels[argmax(probs)], probabilities, confidence: r6(confidence) };
+  }
+  const score = probs.reduce((s, v, i) => s + i * v, 0);
+  return {
+    type: 'score', score: r6(score),
+    legend: Object.fromEntries(p.levels.map((lv, i) => [String(i), lv ?? null])),
+    probabilities, confidence: r6(confidence),
+  };
 }

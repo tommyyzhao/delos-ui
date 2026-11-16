@@ -2,28 +2,81 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark">
-  <title>DELOS — System One Lab</title><link rel="stylesheet" href="style.css">
+  <title>DELOS — System One</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="s1.css">
 </head>
 <body class="s1-body">
-<main class="console s1-console" aria-label="Delos experimental System One lab">
+<main class="console s1-console" aria-label="Delos System One decision console">
   <header class="topbar">
-    <a class="logo" href="index.html" aria-label="Delos token console">DELOS</a>
-    <nav aria-label="System modules"><a class="tab" href="index.html">CODE</a><span class="tab">HOSTS</span><span class="tab">SOFTWARE</span><a class="tab active" href="decide.html" aria-current="page">MODS</a><span class="tab">INFO</span><span class="tab">DATA</span></nav>
-    <div class="system-status"><span class="status-dot"></span><span id="system-status">LOADING HOST</span><span class="status-divider">/</span> LOCAL INFERENCE <span class="status-divider">/</span> ADMIN</div>
+    <a class="logo" href="index.html#code" aria-label="Delos home">DELOS</a>
+    <nav aria-label="System modules"><a class="tab" href="index.html#code">CODE</a><span class="tab">HOSTS</span><span class="tab">SOFTWARE</span><a class="tab active" href="decide.html" aria-current="page">SYSTEM ONE</a><span class="tab">INFO</span><span class="tab">DATA</span></nav>
+    <div class="system-status"><span class="status-dot"></span><span id="system-status">NO MODEL LOADED</span><span class="status-divider">/</span> LOCAL INFERENCE <span class="status-divider">/</span> ADMIN</div>
   </header>
-  <section class="s1-heading"><div><span class="s1-kicker">EXPERIMENTAL / 15,237,266 PARAMETERS / TINYSTORIES</span><h1>SYSTEM ONE LAB</h1></div><p>Typed judgments. No generated answers.<br><strong>A real GPT continuation adapter — not Jev or Clef.</strong></p></section>
-  <section class="s1-evidence" aria-label="Feasibility probe results">
-    <div><strong>87.4%</strong><span>CHOICE ACCURACY · n=182<br>ECE .044 · Brier .171 · hand-written 75% (n=32)</span></div>
-    <div><strong>28.0%</strong><span>ANSWER LETTERS · n=182<br>Chance 26.1% · confident wrong answers</span></div>
-    <div><strong>≈ .90</strong><span>SCORE SPEARMAN · n=20<br>Noul AUROC .44–.49 · n=40 · unreliable</span></div>
-    <p>SUM log-probabilities · T=1<br>T≈1.12 did not improve held-out ECE (n=91).<br>Small probe, not a deployment guarantee.</p>
+
+  <section class="overview" aria-label="Model and last run">
+    <section class="host module" aria-label="Model">
+      <div class="telemetry">
+        <div class="telemetry-top"><span class="tiny-tag" id="model-kind">ONEJEV-0.8B</span><span>STATUS: <b id="phase">NOT LOADED</b></span><span class="serial">SYSTEM ONE / JEV API</span></div>
+        <dl class="telemetry-data" id="model-config">
+          <div><dt>REPO</dt><dd>onnx-community/OneJev-0.8B-ONNX</dd></div>
+          <div><dt>REVISION</dt><dd>afc03812</dd></div>
+          <div><dt>WEIGHTS</dt><dd>q4f16 · decoder + embeddings · text only</dd></div>
+          <div><dt>LICENSE</dt><dd>Apache-2.0</dd></div>
+        </dl>
+        <div class="vitals" aria-live="polite">
+          <div><span>FWD<small>FORWARD MS / LAST</small></span><strong id="forward-ms">—</strong></div>
+          <div><span>TOP<small>TOP PROB</small></span><strong id="top-prob">—</strong></div>
+          <div><span>CONF<small>CONFIDENCE</small></span><strong id="top-conf">—</strong></div>
+        </div>
+      </div>
+    </section>
   </section>
-  <nav class="s1-routes" aria-label="System One experiments"><a href="#/playground">01 PLAYGROUND</a><a href="#/fanout">02 FAN-OUT</a><a href="#/gate">03 CONFIDENCE GATE</a><a href="#/forge">04 HOST FORGE</a><a href="#/calibration">05 CALIBRATION</a><button id="texture" type="button" aria-pressed="false">CHART TEXTURE</button></nav>
-  <p class="s1-mapping">LOCAL MAPPING: <code>state: {story: "…"}</code> becomes story text; other state objects become JSON. <code>instructions</code> is a cloze lead-in appended after state. Each <code>criteria</code> value is literal continuation text scored with a leading space. Scores use level indices, not numeric text. <span>Shared KV prefix, sequential suffix scoring — not a joint System One pass.</span></p>
-  <div id="route" aria-live="polite"></div>
-  <p id="app-message" class="s1-message" role="status"></p>
-  <footer><span>DELOS INCORPORATED <i> / </i> EXPERIMENTAL HOST JUDGMENTS</span><span>LOCAL GPT <i> / </i> NO REMOTE INFERENCE <i> / </i> <a href="index.html">RETURN TO TOKEN TREE</a></span></footer>
-  <div class="loading-overlay" id="loading-overlay" role="status" aria-live="polite"><h2 id="loading-title">LOADING HOST…</h2><progress id="loading-progress" aria-label="Model loading"></progress><p id="loading-detail">Loading local tokenizer and weights.</p></div>
+
+  <section class="dialogue-heading" aria-labelledby="dialogue-title">
+    <h1 id="dialogue-title">DIALOGUE TREE</h1>
+    <label class="prompt-label" for="preset">¬</label>
+    <select id="preset" aria-label="Preset"></select>
+    <span class="heading-meta">TEXT STATE / TYPED QUESTIONS / PROBABILITIES</span>
+  </section>
+
+  <div class="controls" aria-label="Run controls">
+    <button id="run" disabled>RUN</button>
+    <button id="reset" type="button">RESET PRESET</button>
+    <span id="run-status" class="s1-note" role="status" aria-live="polite"></span>
+  </div>
+
+  <div class="s1-workspace">
+    <section class="s1-panel module" aria-labelledby="state-title">
+      <h2 id="state-title">STATE</h2>
+      <label class="s1-field"><span>JSON object or plain text</span>
+        <textarea id="state" rows="7" spellcheck="false"></textarea>
+      </label>
+      <p id="state-error" class="s1-error" role="alert" hidden></p>
+    </section>
+
+    <section class="s1-panel module" aria-labelledby="questions-title">
+      <h2 id="questions-title">QUESTIONS</h2>
+      <div id="questions"></div>
+      <div class="s1-toolbar">
+        <button type="button" id="add-question">+ ADD QUESTION</button>
+      </div>
+    </section>
+
+    <section class="s1-panel module" aria-labelledby="answers-title" id="answers-panel">
+      <h2 id="answers-title">ANSWERS</h2>
+      <div id="answers" aria-live="polite"><p class="s1-note">Load the model, then run.</p></div>
+    </section>
+  </div>
+
+  <footer><span>DELOS INCORPORATED <i> / </i> SYSTEM ONE</span><span>ONEJEV-0.8B <i> / </i> LOCAL WEBGPU <i> / </i> NO REMOTE INFERENCE</span></footer>
+
+  <div class="loading-overlay" id="loading-overlay" role="status" aria-live="polite" hidden>
+    <h2 id="loading-title">LOAD SYSTEM ONE</h2>
+    <p id="loading-detail">OneJev-0.8B · about 0.6 GB · cached by your browser after the first load.</p>
+    <progress id="loading-progress" aria-label="Model loading" hidden></progress>
+    <button id="load" type="button">LOAD MODEL</button>
+  </div>
 </main>
 <script type="module" src="decide.js"></script>
 </body>
