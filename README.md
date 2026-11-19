@@ -18,6 +18,12 @@ python3 -m http.server 8000
 # open http://localhost:8000/
 ```
 
+## Build (production deployment)
+
+```sh
+sh deploy/build.sh dist   # fresh dir: hashed assets + rewritten pages + _headers; upload to Cloudflare Pages
+```
+
 You need a browser with WebGPU (current Chrome or Edge, or Safari 26+) on a secure origin. Browsers only expose WebGPU over https:// or on localhost. The first load downloads about 0.5 GB per model.
 
 To work on the UI without a GPU, open `http://localhost:8000/?stub`. It uses a synthetic engine and downloads nothing.
